@@ -10,7 +10,6 @@ module a.bit.of.java {
     requires jdk.jlink;
 
     requires lombok;
-    requires com.google.common;
 
     exports edu.bit.functional;
     exports edu.bit.process to jdk.internal.ed;

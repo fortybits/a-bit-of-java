@@ -36,6 +36,5 @@ public class ThrowCustomException {
                 System.out.println("Interrupted here...");
             }
         }
-
     }
 }

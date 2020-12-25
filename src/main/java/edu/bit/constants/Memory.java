@@ -9,6 +9,13 @@ import java.lang.constant.ConstantDescs;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
+/**
+ * Q. when does it make sense to implement Constable and not ConstantDesc?
+ * Q. what's a practical use of these interfaces?
+ * Design Q. why are these two separate interfaces (related to first closely)?
+ * <p>
+ * The API is completely documented under https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202031
+ */
 public record Memory(int size) implements Constable, ConstantDesc {
     @Override
     public Optional<? extends ConstantDesc> describeConstable() {
@@ -28,14 +35,12 @@ public record Memory(int size) implements Constable, ConstantDesc {
     }
 
     @Override
-    public Object resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        return lookup.in(__Trial__.class).toString();
+    public Memory resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+        return this;
     }
 
     @Override
     public String toString() {
-        return "Memory{" +
-                "size=" + size +
-                '}';
+        return "Memory{" + "size=" + size + '}';
     }
 }
