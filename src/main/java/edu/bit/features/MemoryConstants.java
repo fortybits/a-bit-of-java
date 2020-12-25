@@ -1,6 +1,4 @@
-package edu.bit.constants;
-
-import edu.bit.__Trial__;
+package edu.bit.features;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
@@ -16,7 +14,7 @@ import java.util.Optional;
  * <p>
  * The API is completely documented under https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202031
  */
-public record Memory(int size) implements Constable, ConstantDesc {
+public record MemoryConstants(int size) implements Constable, ConstantDesc {
     @Override
     public Optional<? extends ConstantDesc> describeConstable() {
         Optional.of(new ClassDesc() {
@@ -27,7 +25,7 @@ public record Memory(int size) implements Constable, ConstantDesc {
 
             @Override
             public Object resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-                return lookup.in(Memory.class).toString();
+                return lookup.in(MemoryConstants.class).toString();
             }
         });
         Optional.of(ConstantDescs.CD_Class); // ClassDesc.of("java.lang.Class")
@@ -35,7 +33,7 @@ public record Memory(int size) implements Constable, ConstantDesc {
     }
 
     @Override
-    public Memory resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public MemoryConstants resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         return this;
     }
 

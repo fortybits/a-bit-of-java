@@ -1,4 +1,4 @@
-package edu.bit.clazz;
+package edu.bit.features;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -1,19 +1,10 @@
-package edu.bit.exception;
+package edu.bit.basics;
 
 import java.util.concurrent.TimeoutException;
 
 public class ThrowCustomException {
 
-    public static void main(String[] args) {
-        // write your code here
-        try {
-            testException(null);
-        } catch (CustomException e) {
-            e.calledMethod(e);
-        }
-    }
-
-    private static void testException(String str) throws CustomException {
+    public void testException(String str) throws CustomException {
         if (str == null) {
             throw new CustomException();
         }

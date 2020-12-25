@@ -6,37 +6,18 @@ import java.util.function.Function;
 public interface Checker<A, B> extends BiFunction<Checker.CheckRequest<A>, Function<A, B>, Checker.CheckResponse<B>> {
 
     default B execute(A req) {
-        CheckRequest<A> chkReq = new CheckRequest<>();
-        chkReq.setOperationRequest(req);
-
+        CheckRequest<A> chkReq = new CheckRequest<>(req);
         Function<A, B> op = a -> null;
-
         Checker<A, B> checker = (aCheckRequest, abFunction) -> new CheckResponse<>();
-
-        return checker.apply(chkReq, op).getOperationResponse();
+        return checker.apply(chkReq, op).operationResponse();
     }
 
-    class CheckResponse<B> {
-        private B operationResponse;
-
-        public B getOperationResponse() {
-            return operationResponse;
-        }
-
-        public void setOperationResponse(B operationResponse) {
-            this.operationResponse = operationResponse;
+    record CheckResponse<B>(B operationResponse) {
+        public CheckResponse() {
+            this(null);
         }
     }
 
-    class CheckRequest<A> {
-        private A operationRequest;
-
-        public A getOperationRequest() {
-            return operationRequest;
-        }
-
-        public void setOperationRequest(A operationRequest) {
-            this.operationRequest = operationRequest;
-        }
+    record CheckRequest<A>(A operationRequest) {
     }
 }

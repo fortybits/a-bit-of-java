@@ -1,4 +1,4 @@
-package edu.bit.constants;
+package edu.bit.features;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ class MemoryConstantsTest {
 
     @Test
     void verifyCustomMemoryConstable() throws ReflectiveOperationException {
-        Memory memory = new Memory(1);
+        MemoryConstants memory = new MemoryConstants(1);
         Assertions.assertEquals(memory.describeConstable(), Optional.of(ConstantDescs.CD_long));
         Assertions.assertEquals(memory.resolveConstantDesc(MethodHandles.publicLookup()), memory);
     }

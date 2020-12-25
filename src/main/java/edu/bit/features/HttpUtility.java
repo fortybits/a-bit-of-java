@@ -15,7 +15,6 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 public class HttpUtility {
 
@@ -32,17 +31,8 @@ public class HttpUtility {
         }
     };
 
-    public static void main(String[] args) throws Exception {
-        sample();
-        asynchronousHttp();
-        synchronousHttp();
-        sample();
-        startRequest();
-        sendRequest(new JSONObject("Hi"));
-    }
-
     // sample request response architecture
-    private static void sample() throws IOException, InterruptedException {
+    private static void simpleArchitecture() throws IOException, InterruptedException {
         URI uri = URI.create("http://192.168.1.102:8080/");
 
         HttpClient httpClient = HttpClient.newBuilder()
@@ -85,7 +75,7 @@ public class HttpUtility {
     }
 
     // multiple async requests using the http client
-    private static void startRequest() throws URISyntaxException, InterruptedException, ExecutionException {
+    private static void startRequest() throws URISyntaxException {
         URI uri = new URI("https://blog.cloudflare.com/announcing-support-for-http-2-server-push-2/");
         HttpRequest request = HttpRequest.newBuilder(uri).version(HttpClient.Version.HTTP_2).GET().build();
         HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();

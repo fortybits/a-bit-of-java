@@ -1,4 +1,4 @@
-package edu.bit.clazz;
+package edu.bit.features;
 
 import java.lang.reflect.Field;
 import java.text.BreakIterator;
@@ -22,7 +22,7 @@ public class NestMates {
 
     public static class BreakIteratorSample {
 
-        public static void main(String[] args) throws Exception {
+        public void breakIteratorWithAccessToNestMate() throws Exception {
             String text = "This is a test";
             List<String> words = new ArrayList<>();
             BreakIterator breakIterator = BreakIterator.getWordInstance();
