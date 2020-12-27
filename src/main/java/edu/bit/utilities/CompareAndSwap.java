@@ -4,9 +4,6 @@ import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 
-/**
- * Created by naman.nigam on 23/03/17.
- */
 public class CompareAndSwap {
 
     static Unsafe UNSAFE = getUnsafe();

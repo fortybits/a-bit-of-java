@@ -3,9 +3,6 @@ package edu.bit.observable;
 import java.util.Observable;
 import java.util.Observer;
 
-/**
- * Created by naman.nigam on 28/09/15.
- */
 public class Methy extends Observable {
     private String message;
 

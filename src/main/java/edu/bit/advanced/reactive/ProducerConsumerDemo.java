@@ -1,4 +1,4 @@
-package edu.bit.concurrency;
+package edu.bit.advanced.reactive;
 
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;

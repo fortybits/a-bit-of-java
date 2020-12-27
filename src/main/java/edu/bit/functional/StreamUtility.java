@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.*;
@@ -16,6 +17,54 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 public class StreamUtility {
+
+
+    record EmployeeContract(Long id, Date date) {
+    }
+
+    record Student(String name, int age, Country country, int score, List<Subject> subjects) {
+    }
+
+    public enum Country {POLAND, UK, GERMANY}
+
+
+    record Subject(String name, Integer marks, boolean optional) {
+    }
+
+    record Author(String lastName, int age) {
+    }
+
+    record Book(Author author) {
+    }
+
+
+    record CarShop(String carName, int cost, Set<String> colors) {
+    }
+
+    record MyDTO(int amount) {
+    }
+
+    record Person(String name, LocalDateTime date, boolean attend, int age, List<String> languagesSpoken,
+                  List<Address> addresses, String address) {
+    }
+
+    record Address(String city, String houseNumber) {
+    }
+
+    record Employee(int id, int salary, List<Employee> subordinates, Department department, String gender) {
+    }
+
+    record Department() {
+    }
+
+    record Stake(int customerId, int betOfferI, int stake) {
+    }
+
+    record LineItem() {
+    }
+
+    record Order(String customerName, List<LineItem> lineItems) {
+    }
 
     public static void main(String[] args) {
         System.out.println(findMaxOrMin(List.of(2, 3, 4, 56, 90)));
@@ -28,20 +77,20 @@ public class StreamUtility {
         System.out.println(sumOfListBigDecimal(List.of(BigDecimal.ONE, BigDecimal.TEN, BigDecimal.ZERO)));
         System.out.println(getDeduplicateList(List.of(List.of(0, 1), List.of(1, 2), List.of(3, 2), List.of(2, 3))));
         System.out.println(sameAttributeFilteredFurtherUsingRecentDate(
-                List.of(new edu.bit.Objects.EmployeeContract(1L, Date.from(Instant.now())),
-                        new edu.bit.Objects.EmployeeContract(1L, Date.from(Instant.now())),
-                        new edu.bit.Objects.EmployeeContract(2L, Date.from(Instant.now())),
-                        new edu.bit.Objects.EmployeeContract(3L, Date.from(Instant.now())))));
+                List.of(new EmployeeContract(1L, Date.from(Instant.now())),
+                        new EmployeeContract(1L, Date.from(Instant.now())),
+                        new EmployeeContract(2L, Date.from(Instant.now())),
+                        new EmployeeContract(3L, Date.from(Instant.now())))));
         System.out.println(countryWithMostNumberOfStudents(List.of(
-                new edu.bit.Objects.Student("Jan", 13, edu.bit.Objects.Student.Country.POLAND, 92),
-                new edu.bit.Objects.Student("Anna", 15, edu.bit.Objects.Student.Country.POLAND, 95),
-                new edu.bit.Objects.Student("Helga", 14, edu.bit.Objects.Student.Country.GERMANY, 93),
-                new edu.bit.Objects.Student("Leon", 14, edu.bit.Objects.Student.Country.GERMANY, 97),
-                new edu.bit.Objects.Student("Chris", 15, edu.bit.Objects.Student.Country.GERMANY, 97),
-                new edu.bit.Objects.Student("Michael", 14, edu.bit.Objects.Student.Country.UK, 90),
-                new edu.bit.Objects.Student("Tim", 15, edu.bit.Objects.Student.Country.UK, 91),
-                new edu.bit.Objects.Student("George", 14, edu.bit.Objects.Student.Country.UK, 98)
-        )));
+                new Student("Jan", 13, Country.POLAND, 92, Collections.emptyList()),
+                new Student("Anna", 15, Country.POLAND, 95, Collections.emptyList()),
+                new Student("Helga", 14, Country.GERMANY, 93, Collections.emptyList()),
+                new Student("Leon", 14, Country.GERMANY, 97, Collections.emptyList()),
+                new Student("Chris", 15, Country.GERMANY, 97, Collections.emptyList()),
+                new Student("Michael", 14, Country.UK, 90, Collections.emptyList()),
+                new Student("Tim", 15, Country.UK, 91, Collections.emptyList()),
+                new Student("George", 14, Country.UK, 98, Collections.emptyList()
+                ))));
         Arrays.stream(charToString(new char[][]{{'a', 'b', 'c'},
                 {'d', 'e', 'f'},
                 {'g', 'h', 'i'}
@@ -52,18 +101,18 @@ public class StreamUtility {
         System.out.println(removeFormerDuplicates(List.of("interface", "list", "Primitive", "class", "primitive", "List", "Interface", "lIst", "Primitive")));
         System.out.println(Arrays.toString(sortArrayBasedOnCustomComparison(new int[]{3, 30, 34, 5, 9})));
         printWhileCollecting(List.of(
-                new edu.bit.Objects.Book(new edu.bit.Objects.Author("overflow", 100)),
-                new edu.bit.Objects.Book(new edu.bit.Objects.Author("stack", 80)),
-                new edu.bit.Objects.Book(new edu.bit.Objects.Author("com/stackoverflow/nullpointer", 49))));
-        System.out.println(getSum(List.of(new edu.bit.Objects.MyDTO(12), new edu.bit.Objects.MyDTO(15), new edu.bit.Objects.MyDTO(1))));
+                new Book(new Author("overflow", 100)),
+                new Book(new Author("stack", 80)),
+                new Book(new Author("com/stackoverflow/nullpointer", 49))));
+        System.out.println(getSum(List.of(new MyDTO(12), new MyDTO(15), new MyDTO(1))));
         System.out.println(getMinimumSizeList(List.of(List.of(0, 2, 3), List.of(0, 2, 3, 4))).size());
         System.out.println(Stream.of().anyMatch(a -> true)); // empty stream anyMatch
         System.out.println(splitStringIntoMap(List.of("10-A", "10-B", "11-C", "11-A")));
         updateAListOfMapOfStrings();
-        System.out.println(groupByListAttributeInListOfObject(List.of(new edu.bit.Objects.CarShop("ford", 25000, Set.of("black", "white", "red")),
-                new edu.bit.Objects.CarShop("audi", 30000, Set.of("blue", "white")),
-                new edu.bit.Objects.CarShop("bmw", 35000, Set.of("black")),
-                new edu.bit.Objects.CarShop("mersedes", 45000, Set.of("blue", "white", "yellow")))));
+        System.out.println(groupByListAttributeInListOfObject(List.of(new CarShop("ford", 25000, Set.of("black", "white", "red")),
+                new CarShop("audi", 30000, Set.of("blue", "white")),
+                new CarShop("bmw", 35000, Set.of("black")),
+                new CarShop("mersedes", 45000, Set.of("blue", "white", "yellow")))));
     }
 
     private static Integer findMaxOrMin(List<Integer> list) {
@@ -184,7 +233,7 @@ public class StreamUtility {
                 .collect(toList());
     }
 
-    private static List<edu.bit.Objects.EmployeeContract> sameAttributeFilteredFurtherUsingRecentDate(List<edu.bit.Objects.EmployeeContract> contract) {
+    private static List<EmployeeContract> sameAttributeFilteredFurtherUsingRecentDate(List<EmployeeContract> contract) {
 //        List<EmployeeContract> finalContract = contract.stream()
 //                .collect(Collectors.toMap(EmployeeContract::getId,
 //                        EmployeeContract::getConsultedOn, (a, b) -> a.after(b) ? a : b))
@@ -193,16 +242,16 @@ public class StreamUtility {
 //                .collect(Collectors.toList());
 
         return new ArrayList<>(contract.stream()
-                .collect(Collectors.toMap(edu.bit.Objects.EmployeeContract::getId, Function.identity(),
-                        BinaryOperator.maxBy(Comparator.comparing(edu.bit.Objects.EmployeeContract::getDate))))
+                .collect(Collectors.toMap(EmployeeContract::id, Function.identity(),
+                        BinaryOperator.maxBy(Comparator.comparing(EmployeeContract::date))))
                 .values());
     }
 
-    private static edu.bit.Objects.Student.Country countryWithMostNumberOfStudents(List<edu.bit.Objects.Student> students) {
-        Map<edu.bit.Objects.Student.Country, Long> numberOfStudentsByCountry = students.stream()
-                .collect(Collectors.groupingBy(edu.bit.Objects.Student::getCountry, Collectors.counting()));
+    private static Country countryWithMostNumberOfStudents(List<Student> students) {
+        Map<Country, Long> numberOfStudentsByCountry = students.stream()
+                .collect(Collectors.groupingBy(Student::country, Collectors.counting()));
 
-        Map.Entry<edu.bit.Objects.Student.Country, Long> mostFrequentEntry = numberOfStudentsByCountry.entrySet()
+        Map.Entry<Country, Long> mostFrequentEntry = numberOfStudentsByCountry.entrySet()
                 .stream()
                 .max(Map.Entry.comparingByValue())
                 .orElse(null);
@@ -212,7 +261,7 @@ public class StreamUtility {
                 .stream()
                 .max((Map.Entry.comparingByValue()))
                 .map(Map.Entry::getKey)
-                .orElse(edu.bit.Objects.Student.Country.POLAND);
+                .orElse(Country.POLAND);
     }
 
     private static Map.Entry<Integer, Long> maxEntryFromAListBasedOnCount(List<Integer> list) {
@@ -231,14 +280,14 @@ public class StreamUtility {
                 .orElse(0);
     }
 
-    private static List<edu.bit.Objects.Person> filterDistinctElementsOfAList(List<edu.bit.Objects.Person> people) {
+    private static List<Person> filterDistinctElementsOfAList(List<Person> people) {
 //        Set<Student> finalListOfStudents = students.stream()
 //                .map(x -> nameToStudentMap.merge(x.getConsultedBy(), x, (a, b) -> a.getAge() > b.getAge() ? a : b))
 //                .collect(Collectors.toSet());
         return new ArrayList<>(people.stream()
-                .collect(Collectors.toMap(a -> a.getName().toLowerCase(),
+                .collect(Collectors.toMap(a -> a.name().toLowerCase(),
                         Function.identity(),
-                        (person, person2) -> person.getDate().isAfter(person2.getDate()) ? person : person2))
+                        (person, person2) -> person.date().isAfter(person2.date()) ? person : person2))
                 .values());
     }
 
@@ -263,11 +312,11 @@ public class StreamUtility {
                 .toArray();
     }
 
-    private static void printWhileCollecting(List<edu.bit.Objects.Book> library) {
+    private static void printWhileCollecting(List<Book> library) {
         List<String> lastNames = library.stream()
-                .map(edu.bit.Objects.Book::getAuthor)
-                .filter(author -> author.getAge() >= 50)
-                .map(edu.bit.Objects.Author::getLastName)
+                .map(Book::author)
+                .filter(author -> author.age() >= 50)
+                .map(Author::lastName)
                 .limit(10)
                 .peek(System.out::println)
                 .collect(Collectors.toList());
@@ -280,16 +329,19 @@ public class StreamUtility {
                 .orElse(0);
     }
 
-    private static Double getSum(List<edu.bit.Objects.MyDTO> myDTOList) {
-        return myDTOList.stream().filter(Objects::nonNull).mapToDouble(edu.bit.Objects.MyDTO::getAmount).sum();
+    private static Double getSum(List<MyDTO> myDTOList) {
+        return myDTOList.stream().filter(Objects::nonNull).mapToDouble(MyDTO::amount).sum();
     }
 
-    private static edu.bit.Objects.Node createNodeIfValueIsOneOrTwo(ArrayList<Integer> list) {
+    private static Node createNodeIfValueIsOneOrTwo(ArrayList<Integer> list) {
         return list.stream()
                 .filter(l -> l == 1 || l == 2)
                 .findAny()
-                .map(edu.bit.Objects.Node::new)
+                .map(Node::new)
                 .orElse(null);
+    }
+
+    record Node(int degree) {
     }
 
     private static Map<Long, List<Long>> swapValuesToKeyInAMap(Map<Long, List<Long>> skuMap) {
@@ -322,10 +374,10 @@ public class StreamUtility {
     }
 
     private static Map<String, List<
-            edu.bit.Objects.Person>> groupPeopleByLanguage(List<edu.bit.Objects.Person> people) {
+            Person>> groupPeopleByLanguage(List<Person> people) {
         // group by language since each person knows a List<String> languages
         return people.stream()
-                .flatMap(p -> p.getLanguagesSpoken()
+                .flatMap(p -> p.languagesSpoken()
                         .stream()
                         .map(l -> new AbstractMap.SimpleEntry<>(l, p)))
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
@@ -357,9 +409,9 @@ public class StreamUtility {
         System.out.println(resultMap);
     }
 
-    private static Map<String, List<edu.bit.Objects.CarShop>> groupByListAttributeInListOfObject(List<edu.bit.Objects.CarShop> carShops) {
+    private static Map<String, List<CarShop>> groupByListAttributeInListOfObject(List<CarShop> carShops) {
         return carShops.stream()
-                .flatMap(e -> e.getColors().stream()
+                .flatMap(e -> e.colors().stream()
                         .map(v -> new AbstractMap.SimpleEntry<>(v, e)))
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
@@ -378,10 +430,10 @@ public class StreamUtility {
      *                filtering(e -> e.getSalary() > 2000,
      *                          toSet())));
      */
-    private static Map<edu.bit.Objects.Department, Set<edu.bit.Objects.Employee>> filteringWhileGrouping(List<edu.bit.Objects.Employee> employees) {
+    private static Map<Department, Set<Employee>> filteringWhileGrouping(List<Employee> employees) {
         return employees.stream()
-                .collect(Collectors.groupingBy(edu.bit.Objects.Employee::getDepartment,
-                        Collectors.filtering(e -> e.getSalary() > 2000, Collectors.toSet())));
+                .collect(Collectors.groupingBy(Employee::department,
+                        Collectors.filtering(e -> e.salary() > 2000, Collectors.toSet())));
     }
 
     public static <T> Predicate<T> chainPredicates(Function<T, Predicate<T>> mapFn, T[] args) {
@@ -433,10 +485,10 @@ public class StreamUtility {
                 .collect(Collectors.toList());
     }
 
-    private List<edu.bit.Objects.Stake> filteredStakeForDistinctCustomer(List<edu.bit.Objects.Stake> stakes, int maxBetOfferId) {
+    private List<Stake> filteredStakeForDistinctCustomer(List<Stake> stakes, int maxBetOfferId) {
         return stakes.stream()
-                .filter(s -> s.getBetOfferId() == maxBetOfferId) // maxProductOfNonOverlappingPallindromes betOfferId
-                .filter(StreamUtility.distinctByKey(edu.bit.Objects.Stake::getCustomerId)) // distinct customer Id
+                .filter(s -> s.betOfferI() == maxBetOfferId) // maxProductOfNonOverlappingPallindromes betOfferId
+                .filter(StreamUtility.distinctByKey(Stake::customerId)) // distinct customer Id
                 .limit(20) // limit to 20
                 .collect(toList());
     }
@@ -453,10 +505,10 @@ public class StreamUtility {
      *                flatMapping(order -> order.getLineItems().stream(),
      *                            toSet())));
      */
-    private Map<String, Set<edu.bit.Objects.LineItem>> flatMappingWhileGroupingItemsByCustomerName(List<edu.bit.Objects.Order> orders) {
+    private Map<String, Set<LineItem>> flatMappingWhileGroupingItemsByCustomerName(List<Order> orders) {
         return orders.stream()
-                .collect(Collectors.groupingBy(edu.bit.Objects.Order::getCustomerName,
-                        Collectors.flatMapping(order -> order.getLineItems().stream(), Collectors.toSet())));
+                .collect(Collectors.groupingBy(Order::customerName,
+                        Collectors.flatMapping(order -> order.lineItems().stream(), Collectors.toSet())));
     }
 
     private void consumeObjectsProvidedBySupplier() {

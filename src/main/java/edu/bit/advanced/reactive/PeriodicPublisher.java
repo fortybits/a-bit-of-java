@@ -1,4 +1,4 @@
-package edu.bit.concurrency;
+package edu.bit.advanced.reactive;
 
 import java.util.concurrent.*;
 import java.util.function.Supplier;

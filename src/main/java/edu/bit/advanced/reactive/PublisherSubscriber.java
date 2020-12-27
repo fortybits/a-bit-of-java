@@ -1,7 +1,8 @@
-package edu.bit.concurrency;
+package edu.bit.advanced.reactive;
 
 
 import java.util.List;
+import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 
 public class PublisherSubscriber {
@@ -41,5 +42,38 @@ public class PublisherSubscriber {
         assert (5 == subscriber.getLastItem());
 
         publisher.close();
+    }
+
+    public static class TestSubscriber<Integer> implements Flow.Subscriber<Integer> {
+
+        private int lastItem;
+
+        @Override
+        public void onSubscribe(Flow.Subscription subscription) {
+            System.out.println("Subscribed");
+            lastItem = 0;
+        }
+
+        @Override
+        public void onNext(Integer item) {
+
+            System.out.println("Received : " + item);
+            lastItem += 1; // expect increment by 1
+    //        assertTrue(lastItem == item);
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            // nothing for the moment
+        }
+
+        @Override
+        public void onComplete() {
+            System.out.println("Completed");
+        }
+
+        public int getLastItem() {
+            return lastItem;
+        }
     }
 }

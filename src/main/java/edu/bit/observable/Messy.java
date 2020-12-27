@@ -1,8 +1,5 @@
 package edu.bit.observable;
 
-/**
- * Created by naman.nigam on 28/09/15.
- */
 public class Messy {
 
     public void messed1() {

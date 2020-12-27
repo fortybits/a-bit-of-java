@@ -2,9 +2,6 @@ package edu.bit.utilities;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Created by naman.nigam on 23/03/17.
- */
 public class AtomicJDK9 {
 
     static AtomicInteger ai = new AtomicInteger(0);

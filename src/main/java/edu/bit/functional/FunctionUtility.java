@@ -10,6 +10,9 @@ import java.util.stream.Collectors;
 
 public class FunctionUtility {
 
+    record XYZProfile(String name, Integer code) {
+    }
+    
     public static void main(String[] args) {
         BinaryOperator<Integer> foo = (a, b) -> a * a + b * b;
         BiFunction<Integer, Integer, Integer> bar = (a, b) -> a * a + b * b;
@@ -18,14 +21,14 @@ public class FunctionUtility {
 
 
         // biFunction on custom object
-        BiFunction<String, Integer, edu.bit.Objects.XYZProfile> xyzProfileBiFunction = (string, integer) -> {
-            edu.bit.Objects.XYZProfile xyzProfile = new edu.bit.Objects.XYZProfile(string, integer);
+        BiFunction<String, Integer, XYZProfile> xyzProfileBiFunction = (string, integer) -> {
+            XYZProfile xyzProfile = new XYZProfile(string, integer);
             // modify xyZProfile
             System.out.println(xyzProfile);
             return xyzProfile;
         };
-        edu.bit.Objects.XYZProfile xyzProfile1 = xyzProfileBiFunction.apply("com/stackoverflow/nullpointer", 0);
-        edu.bit.Objects.XYZProfile xyzProfile2 = xyzProfileBiFunction.apply("holger", 1);
+        XYZProfile xyzProfile1 = xyzProfileBiFunction.apply("com/stackoverflow/nullpointer", 0);
+        XYZProfile xyzProfile2 = xyzProfileBiFunction.apply("holger", 1);
         System.out.println(xyzProfile1 + "" + xyzProfile2);
 
         // function chain
