@@ -8,9 +8,7 @@ package edu.bit.features;
 public class PatternMatching {
 
     public static void main(String[] args) {
-        /*
-         * Before JEP-305
-         */
+        // Before JEP-305
         Object obj = new Object();
         String formatted = "unknown";
         if (obj instanceof Integer) {
@@ -30,25 +28,23 @@ public class PatternMatching {
             formatted = String.format("String %s", s);
         }
 
-        /*
-         * After JEP-305
-         */
+        // After JEP-305 and 375
         String formatting = "unknown";
         formatting = obj instanceof Float f ? String.valueOf(f.byteValue()) : "";
 
-        if (obj instanceof Integer i) {
-            formatting = String.format("int %d", i);
-        } else if (obj instanceof Byte b) {
-            formatting = String.format("byte %d", b);
-        } else if (obj instanceof Long l) {
-            formatting = String.format("long %d", l);
-        } else if (obj instanceof Double d) {
-            formatting = String.format("double %f", d);
-        } else if (obj instanceof String s) {
-            formatting = String.format("String %s", s);
+        if (obj instanceof Integer x) {
+            formatting = String.format("int %d", x);
+        } else if (obj instanceof Byte x) {
+            formatting = String.format("byte %d", x);
+        } else if (obj instanceof Long x) {
+            formatting = String.format("long %d", x);
+        } else if (obj instanceof Double x) {
+            formatting = String.format("double %f", x);
+        } else if (obj instanceof String x) {
+            formatting = String.format("String %s", x);
         }
 
-        // further
+        // further there would be a consideration to evolve pattern matching such as
 //        String format  = "unknown";
 //        switch (obj) {
 //            case Integer i: format = String.format("int %d", i); break;
