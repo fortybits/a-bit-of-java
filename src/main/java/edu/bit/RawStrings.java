@@ -57,4 +57,39 @@ public class RawStrings {
 //               </html>
 //              `;
     }
+
+    public void indentRawStrings() {
+        String embeddedString = """
+                          <html>
+                          <body>
+                              <p>Hello World.</p>
+                          </body>
+                      </html>
+                """.stripIndent();
+        System.out.print(embeddedString);
+
+        String indentedBody = """
+                       <html>
+                  <body>
+                       <p>Hello World - Indented.</p>
+                   </body>
+                </html>""".indent(4);
+        System.out.print(indentedBody);
+
+        String htmlBody = """
+                     <html>
+                         <body>
+                             <p>Hello World.</p>
+                         </body>
+                     </html>
+                """.indent(4);
+        System.out.print(htmlBody);
+
+        String multiLine = """
+                First line
+                Second line with indentation
+                Third line
+                and so on...""";
+        System.out.println(multiLine);
+    }
 }

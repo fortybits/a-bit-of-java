@@ -18,11 +18,230 @@ import java.util.stream.Stream;
 
 public class Records {
 
-    @Value
-    public class Student {
-        String name;
-        int age;
-        double timeSpent;
+    public static void writeAndReadTestForSerialisation() throws IOException, ClassNotFoundException {
+        try (ObjectOutputStream out =
+                     new ObjectOutputStream(
+                             new FileOutputStream("persons.bin"))) {
+            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
+            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
+            out.writeObject(null);
+        }
+
+        try (ObjectInputStream in = new ObjectInputStream(
+                new FileInputStream("persons.bin"))) {
+            Person human;
+            while ((human = (Person) in.readObject()) != null) {
+                System.out.println(human);
+            }
+        }
+    }
+
+    // this particular example of moving from lombok based annotations to records is also listed at
+    // https://stackoverflow.com/questions/60796961/compatibility-issues-while-converting-classes-to-records
+    public void equalsImplementationDuringMigration() {
+        List<City> cities = List.of(
+                new City(1, "one"),
+                new City(2, "two"),
+                new City(3, "three"),
+                new City(2, "two"));
+        Map<City, Long> cityListMap = cities.stream()
+                .collect(Collectors.groupingBy(Function.identity(),
+                        Collectors.counting()));
+        System.out.println(cityListMap);
+
+        List<CityRecord> cityRecords = List.of(
+                new CityRecord(1, "one"),
+                new CityRecord(2, "two"),
+                new CityRecord(3, "three"),
+                new CityRecord(2, "two"));
+        Map<CityRecord, Long> cityRecordListMap = cityRecords.stream()
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        System.out.println(cityRecordListMap);
+    }
+
+    public void recordsWithInterfaces() {
+        new Summable("message").method();
+    }
+
+    // one can verify using class name with an API if a class is a record or not
+    public void verifyRecordOrClass() throws ClassNotFoundException {
+        Student student = new Student("naman", 30, 0.45);
+        Class<?> studentCls = Class.forName("edu.bit.features.records.Student");
+        System.out.println(studentCls.isRecord());
+
+        PersonRecord person = new PersonRecord("naman", "nigam");
+        Class<?> personCls = Class.forName("edu.bit.features.records.Person");
+        System.out.println(personCls.isRecord());
+    }
+
+    record ConstFunction<T, R>(T t, R r) implements Function<T, R> {
+        // static fields are allowed
+        static String field;
+
+        @Override
+        public R apply(T t) {
+            return null;
+        }
+
+        // trick here is that the name of the variable is same as the abstract methods of interfaces
+        record ConstCallable<V>(V call) implements Callable<V> {
+        }
+
+        record ConstSupplier<T>(T get) implements Supplier<T> {
+        }
+
+        // what records are not meant for
+        record Executor<T>(Supplier<T> supply, Consumer<T> accept) {
+        }
+    }
+
+    // records could be used to implement callable
+    public void usingRecordForCallablesToSubmit() throws ExecutionException, InterruptedException {
+        ConstFunction.ConstCallable<String> aRecord;
+        Stream.generate(new ConstFunction.ConstSupplier<>(5)).limit(2).forEach(System.out::println);
+        aRecord = new ConstFunction.ConstCallable<>("record");
+        System.out.println(ForkJoinPool.commonPool().submit(aRecord).get());
+    }
+
+    public void leakingViaRecords() {
+        Singleton singleton = Singleton.getInstance();
+        System.out.println(singleton.leak());
+    }
+
+    // while using the mix of both the worlds such as lombok and java-records, intelliJ fails to compile
+    // complete details listed in https://stackoverflow.com/questions/60795837
+    public void mixOfWorldsWithLombok(String[] args) {
+        System.out.println(new Java("14", true).version());
+    }
+
+    // the behaviour os wrapping primitive integer array within a class versus within records
+    public void wrappingPrimitiveTypesWithinRecords() {
+        var ints = new int[]{1, 2};
+
+        var foo = new Foo(ints);
+        System.out.println(foo); // Foo[ints=[I@6433a2]
+        System.out.println(new Foo(new int[]{1, 2}).equals(new Foo(new int[]{1, 2}))); // false
+        System.out.println(new Foo(ints).equals(new Foo(ints))); //true
+        System.out.println(foo.equals(foo)); // true
+
+        var bar = new Bar(ints);
+        System.out.println(bar); // Bar{arr=[1, 2]}
+        System.out.println(new Bar(new int[]{1, 2}).equals(new Bar(new int[]{1, 2}))); // true
+        System.out.println(new Bar(ints).equals(new Bar(ints))); //true
+        System.out.println(bar.equals(bar)); // true
+
+        var integers = Arrays.asList(1, 2);
+        var world = new World(integers);
+        System.out.println(world); // World{ints=[1, 2]}
+        System.out.println(new World(Arrays.asList(1, 2)).equals(new World(Arrays.asList(1, 2)))); // true
+        System.out.println(new World(integers).equals(new World(integers))); //true
+        System.out.println(world.equals(world)); // true
+
+
+        var worldRecord = new WorldRecord(integers);
+        System.out.println(worldRecord); // World{ints=[1, 2]}
+        System.out.println(new WorldRecord(Arrays.asList(1, 2)).equals(new WorldRecord(Arrays.asList(1, 2)))); // true
+        System.out.println(new WorldRecord(integers).equals(new WorldRecord(integers))); //true
+        System.out.println(worldRecord.equals(worldRecord)); // true
+
+
+    }
+
+    public void circularReferenceDeSerialisation() throws IOException, ClassNotFoundException {
+        One one = new One("tail");
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("records.bin"))) {
+            out.writeObject(new One("one", new Two(2, new Three(3L, one))));
+            out.writeObject(new Cyclic(new Cyclic(new Cyclic(new Cyclic()))));
+            out.writeObject(null);
+        }
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("records.bin"))) {
+            One allInOne;
+            while ((allInOne = (One) in.readObject()) != null) {
+                System.out.println(allInOne);
+            }
+
+            Cyclic cyclic;
+            while ((cyclic = (Cyclic) in.readObject()) != null) {
+                System.out.println(cyclic);
+            }
+        }
+    }
+
+    public void constructorValidationTestForRecords() throws IOException, ClassNotFoundException {
+        try (ObjectOutputStream out =
+                     new ObjectOutputStream(
+                             new FileOutputStream("persons.bin"))) {
+            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
+            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
+            out.writeObject(null);
+        }
+        try (ObjectInputStream in = new ObjectInputStream(
+                new FileInputStream("persons.bin"))) {
+            Person human;
+            while ((human = (Person) in.readObject()) != null) {
+                System.out.println(human);
+            }
+        }
+
+    }
+
+    public void writeAndReadWithOptionalParameterTest() throws IOException, ClassNotFoundException {
+        record PersonRecord(String firstName, String lastName) implements Person, Serializable {
+            public PersonRecord(String firstName) {
+                this(firstName, null);
+            }
+        }
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("persons.bin"))) {
+            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
+            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
+            out.writeObject(null);
+        }
+
+        try (ObjectInputStream in = new ObjectInputStream(
+                new FileInputStream("persons.bin"))) {
+            Person human;
+            while ((human = (Person) in.readObject()) != null) {
+                System.out.println(human);
+            }
+        }
+    }
+
+    public void writeAndReadWithToStringTest() throws IOException, ClassNotFoundException {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("persons.bin"))) {
+            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
+            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
+            out.writeObject(null);
+        }
+
+        try (ObjectInputStream in = new ObjectInputStream(
+                new FileInputStream("persons.bin"))) {
+            Person human;
+            while ((human = (Person) in.readObject()) != null) {
+                System.out.println(human);
+            }
+        }
+    }
+
+
+    // the pattern for null values can be implemented such as the following implementations
+    interface MyRecord {
+        String id();
+
+        Optional<String> value();
+    }
+
+    // records with interfaces and its implementations at its feasibility
+    interface Able {
+        default void method() {
+            System.out.println("interface able");
+        }
+    }
+
+    // serialisation samples for records follow up further
+    public interface Person {
+        String firstName();
+
+        String lastName();
     }
 
     /**
@@ -71,29 +290,6 @@ public class Records {
     record CityRecord(Integer id, String name) {
     }
 
-    // this particular example of moving from lombok based annotations to records is also listed at
-    // https://stackoverflow.com/questions/60796961/compatibility-issues-while-converting-classes-to-records
-    public void equalsImplementationDuringMigration() {
-        List<City> cities = List.of(
-                new City(1, "one"),
-                new City(2, "two"),
-                new City(3, "three"),
-                new City(2, "two"));
-        Map<City, Long> cityListMap = cities.stream()
-                .collect(Collectors.groupingBy(Function.identity(),
-                        Collectors.counting()));
-        System.out.println(cityListMap);
-
-        List<CityRecord> cityRecords = List.of(
-                new CityRecord(1, "one"),
-                new CityRecord(2, "two"),
-                new CityRecord(3, "three"),
-                new CityRecord(2, "two"));
-        Map<CityRecord, Long> cityRecordListMap = cityRecords.stream()
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        System.out.println(cityRecordListMap);
-    }
-
     // Null object pattern for records as listed
     // in https://stackoverflow.com/questions/62799232/java-records-and-null-object-pattern
     public static class Id {
@@ -126,13 +322,6 @@ public class Records {
         }
     }
 
-    // the pattern for null values can be implemented such as the following implementations
-    interface MyRecord {
-        String id();
-
-        Optional<String> value();
-    }
-
     static class MyClassDataAccess {
         Optional<String> getValue(MyClass myClass) {
             return Optional.ofNullable(myClass.value());
@@ -160,7 +349,6 @@ public class Records {
             return Optional.of(actualValue);
         }
     }
-
 
     // It is a compile-time error for a record declaration to declare a record component with the name:
     // clone, finalize, getClass, hashCode, notify, notifyAll, toString, or wait (8.10.3)
@@ -222,64 +410,12 @@ public class Records {
         }
     }
 
-    // records with interfaces and its implementations at its feasibility
-    interface Able {
-        default void method() {
-            System.out.println("interface able");
-        }
-    }
-
     record Summable(String msg) implements Able {
         @Override
         public void method() {
             System.out.println("record able");
         }
     }
-
-    public void recordsWithInterfaces() {
-        new Summable("message").method();
-    }
-
-    // one can verify using class name with an API if a class is a record or not
-    public void verifyRecordOrClass() throws ClassNotFoundException {
-        Student student = new Student("naman", 30, 0.45);
-        Class<?> studentCls = Class.forName("edu.bit.features.records.Student");
-        System.out.println(studentCls.isRecord());
-
-        PersonRecord person = new PersonRecord("naman", "nigam");
-        Class<?> personCls = Class.forName("edu.bit.features.records.Person");
-        System.out.println(personCls.isRecord());
-    }
-
-
-    // records could be used to implement callable
-    public void usingRecordForCallablesToSubmit() throws ExecutionException, InterruptedException {
-        record ConstFunction<T, R>(T t, R r) implements Function<T, R> {
-            // static fields are allowed
-            static String field;
-
-            @Override
-            public R apply(T t) {
-                return null;
-            }
-
-            // trick here is that the name of the variable is same as the abstract methods of interfaces
-            record ConstCallable<V>(V call) implements Callable<V> {
-            }
-
-            record ConstSupplier<T>(T get) implements Supplier<T> {
-            }
-
-            // what records are not meant for
-            record Executor<T>(Supplier<T> supply, Consumer<T> accept) {
-            }
-        }
-        ConstFunction.ConstCallable<String> aRecord;
-        Stream.generate(new ConstFunction.ConstSupplier<>(5)).limit(2).forEach(System.out::println);
-        aRecord = new ConstFunction.ConstCallable<>("record");
-        System.out.println(ForkJoinPool.commonPool().submit(aRecord).get());
-    }
-
 
     // reference of a local record can be used tto prevent leaking the information from singleton
     public static class Singleton {
@@ -298,52 +434,8 @@ public class Records {
         }
     }
 
-    public void leakingViaRecords() {
-        Singleton singleton = Singleton.getInstance();
-        System.out.println(singleton.leak());
-    }
-
-    // while using the mix of both the worlds such as lombok and java-records, intelliJ fails to compile
-    // complete details listed in https://stackoverflow.com/questions/60795837
-    public void mixOfWorldsWithLombok(String[] args) {
-        System.out.println(new Java("14", true).version());
-    }
-
     @AllArgsConstructor
     private record Java(String version, boolean preview) {
-    }
-
-    // the behaviour os wrapping primitive integer array within a class versus within records
-    public void wrappingPrimitiveTypesWithinRecords() {
-        var ints = new int[]{1, 2};
-
-        var foo = new Foo(ints);
-        System.out.println(foo); // Foo[ints=[I@6433a2]
-        System.out.println(new Foo(new int[]{1, 2}).equals(new Foo(new int[]{1, 2}))); // false
-        System.out.println(new Foo(ints).equals(new Foo(ints))); //true
-        System.out.println(foo.equals(foo)); // true
-
-        var bar = new Bar(ints);
-        System.out.println(bar); // Bar{arr=[1, 2]}
-        System.out.println(new Bar(new int[]{1, 2}).equals(new Bar(new int[]{1, 2}))); // true
-        System.out.println(new Bar(ints).equals(new Bar(ints))); //true
-        System.out.println(bar.equals(bar)); // true
-
-        var integers = Arrays.asList(1, 2);
-        var world = new World(integers);
-        System.out.println(world); // World{ints=[1, 2]}
-        System.out.println(new World(Arrays.asList(1, 2)).equals(new World(Arrays.asList(1, 2)))); // true
-        System.out.println(new World(integers).equals(new World(integers))); //true
-        System.out.println(world.equals(world)); // true
-
-
-        var worldRecord = new WorldRecord(integers);
-        System.out.println(worldRecord); // World{ints=[1, 2]}
-        System.out.println(new WorldRecord(Arrays.asList(1, 2)).equals(new WorldRecord(Arrays.asList(1, 2)))); // true
-        System.out.println(new WorldRecord(integers).equals(new WorldRecord(integers))); //true
-        System.out.println(worldRecord.equals(worldRecord)); // true
-
-
     }
 
     static class Bar {
@@ -419,13 +511,6 @@ public class Records {
     static record WorldRecord(List<Integer> ints) {
     }
 
-    // serialisation samples for records follow up further
-    public interface Person {
-        String firstName();
-
-        String lastName();
-    }
-
     private record Cyclic(Cyclic cycle) implements Serializable {
         public Cyclic() {
             this(new Cyclic(null));
@@ -444,46 +529,6 @@ public class Records {
 
     private record Three(Long three, One one) implements Serializable {
     }
-
-    public void circularReferenceDeSerialisation() throws IOException, ClassNotFoundException {
-        One one = new One("tail");
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("records.bin"))) {
-            out.writeObject(new One("one", new Two(2, new Three(3L, one))));
-            out.writeObject(new Cyclic(new Cyclic(new Cyclic(new Cyclic()))));
-            out.writeObject(null);
-        }
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream("records.bin"))) {
-            One allInOne;
-            while ((allInOne = (One) in.readObject()) != null) {
-                System.out.println(allInOne);
-            }
-
-            Cyclic cyclic;
-            while ((cyclic = (Cyclic) in.readObject()) != null) {
-                System.out.println(cyclic);
-            }
-        }
-    }
-
-
-    public void constructorValidationTestForRecords() throws IOException, ClassNotFoundException {
-        try (ObjectOutputStream out =
-                     new ObjectOutputStream(
-                             new FileOutputStream("persons.bin"))) {
-            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
-            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
-            out.writeObject(null);
-        }
-        try (ObjectInputStream in = new ObjectInputStream(
-                new FileInputStream("persons.bin"))) {
-            Person human;
-            while ((human = (Person) in.readObject()) != null) {
-                System.out.println(human);
-            }
-        }
-
-    }
-
 
     public record PersonRec(String firstName, String lastName) implements Person, Serializable {
         public PersonRec(String firstName) {
@@ -543,59 +588,10 @@ public class Records {
         }
     }
 
-
-    public static void writeAndReadTestForSerialisation() throws IOException, ClassNotFoundException {
-        try (ObjectOutputStream out =
-                     new ObjectOutputStream(
-                             new FileOutputStream("persons.bin"))) {
-            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
-            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
-            out.writeObject(null);
-        }
-
-        try (ObjectInputStream in = new ObjectInputStream(
-                new FileInputStream("persons.bin"))) {
-            Person human;
-            while ((human = (Person) in.readObject()) != null) {
-                System.out.println(human);
-            }
-        }
-    }
-
-    public void writeAndReadWithOptionalParameterTest() throws IOException, ClassNotFoundException {
-        record PersonRecord(String firstName, String lastName) implements Person, Serializable {
-            public PersonRecord(String firstName) {
-                this(firstName, null);
-            }
-        }
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("persons.bin"))) {
-            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
-            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
-            out.writeObject(null);
-        }
-
-        try (ObjectInputStream in = new ObjectInputStream(
-                new FileInputStream("persons.bin"))) {
-            Person human;
-            while ((human = (Person) in.readObject()) != null) {
-                System.out.println(human);
-            }
-        }
-    }
-
-    public void writeAndReadWithToStringTest() throws IOException, ClassNotFoundException {
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("persons.bin"))) {
-            out.writeObject(new PersonRecord("Heinz", "Kabutz"));
-            out.writeObject(new PersonClass("Heinz", "Sommerfeld"));
-            out.writeObject(null);
-        }
-
-        try (ObjectInputStream in = new ObjectInputStream(
-                new FileInputStream("persons.bin"))) {
-            Person human;
-            while ((human = (Person) in.readObject()) != null) {
-                System.out.println(human);
-            }
-        }
+    @Value
+    public class Student {
+        String name;
+        int age;
+        double timeSpent;
     }
 }

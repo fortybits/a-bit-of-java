@@ -1,6 +1,5 @@
 package edu.bit;
 
-import edu.bit.MemoryConstants;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,5 @@
 package edu.bit;
 
-import edu.bit.ImprovedNullHandling;
 import org.junit.jupiter.api.Test;
 
 class ImprovedNullHandlingTest {

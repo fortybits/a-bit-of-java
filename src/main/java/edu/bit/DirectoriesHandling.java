@@ -10,6 +10,27 @@ import java.util.Objects;
 
 public class DirectoriesHandling {
 
+    private static void deleteFilesBasedOnPaths(List<Path> paths) {
+        for (Path folderPath : paths) {
+            Path to = folderPath.getRoot().resolve(
+                    folderPath.getParent().subpath(0, folderPath.getNameCount() - 1));
+            try {
+                Files.list(folderPath).forEach(filePath -> {
+                    try {
+                        Files.move(filePath, to.resolve(filePath.getFileName()), StandardCopyOption.ATOMIC_MOVE);
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
+                    }
+                });
+                if (Files.list(folderPath).count() == 0) {
+                    Files.deleteIfExists(folderPath); // this call
+                }
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+    }
+
     public void createAFreshDirectoryForScreenShotsDuringAutomation() throws IOException {
         String currentDirectory = System.getProperty("user.dir");
         File screenshotDirectory = new File(currentDirectory + "/logs/screenshots");
@@ -37,26 +58,5 @@ public class DirectoriesHandling {
         }
         Files.delete(dir.toPath());
         return true;
-    }
-
-    private static void deleteFilesBasedOnPaths(List<Path> paths) {
-        for (Path folderPath : paths) {
-            Path to = folderPath.getRoot().resolve(
-                    folderPath.getParent().subpath(0, folderPath.getNameCount() - 1));
-            try {
-                Files.list(folderPath).forEach(filePath -> {
-                    try {
-                        Files.move(filePath, to.resolve(filePath.getFileName()), StandardCopyOption.ATOMIC_MOVE);
-                    } catch (IOException e) {
-                        System.out.println(e.getMessage());
-                    }
-                });
-                if (Files.list(folderPath).count() == 0) {
-                    Files.deleteIfExists(folderPath); // this call
-                }
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        }
     }
 }

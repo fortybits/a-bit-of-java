@@ -10,9 +10,6 @@ import java.util.stream.Collectors;
 
 public class FunctionUtility {
 
-    record XYZProfile(String name, Integer code) {
-    }
-    
     public static void main(String[] args) {
         BinaryOperator<Integer> foo = (a, b) -> a * a + b * b;
         BiFunction<Integer, Integer, Integer> bar = (a, b) -> a * a + b * b;
@@ -81,5 +78,8 @@ public class FunctionUtility {
 
     interface ThreeConsumer<T, U, V> {
         void accept(T t, U u, V v);
+    }
+
+    record XYZProfile(String name, Integer code) {
     }
 }

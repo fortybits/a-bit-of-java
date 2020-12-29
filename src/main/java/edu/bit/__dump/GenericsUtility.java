@@ -101,4 +101,16 @@ public class GenericsUtility {
 
         // also has hashCode() and equals() methods to be based on id
     }
+
+
+    public void genericsWithCollections() {
+        // interesting generics
+        SortedSet<int[]> all = new TreeSet<>((a, b) -> {
+            if (a[0] == b[0]) {
+                return Integer.compare(a[1], b[1]);
+            } else {
+                return Integer.compare(a[0], b[0]);
+            }
+        });
+    }
 }

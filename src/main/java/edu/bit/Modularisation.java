@@ -15,42 +15,6 @@ import java.util.stream.Collectors;
 
 public class Modularisation {
 
-    public interface AnotherProvider extends ModuleFinder {
-    }
-
-    public interface SomeProvider extends ResourceBundleProvider {
-    }
-
-    public class AnotherProviderImpl implements AnotherProvider {
-        @Override
-        public Optional<ModuleReference> find(String name) {
-            return Optional.empty();
-        }
-
-        @Override
-        public Set<ModuleReference> findAll() {
-            return null;
-        }
-    }
-
-    public class SomeProviderImpl implements SomeProvider {
-        @Override
-        public ResourceBundle getBundle(String baseName, Locale locale) {
-            return new ResourceBundle() {
-                @Override
-                protected Object handleGetObject(String key) {
-                    return null;
-                }
-
-                @Override
-                public Enumeration<String> getKeys() {
-                    return null;
-                }
-            };
-        }
-    }
-
-
     public void providersWithinModules() {
         ModuleFinder finder = ModuleFinder.of(Paths.get("/Users/naman.nigam/GitHub/Naman/Jigsaw/out/production/"));
         ModuleLayer parent = ModuleLayer.boot();
@@ -187,5 +151,40 @@ public class Modularisation {
                 "    requires java.net.http;\n" +
                 "}";
         ModuleDescriptor moduleDescriptor = ModuleDescriptor.read(ByteBuffer.wrap(moduleInfo.getBytes()));
+    }
+
+    public interface AnotherProvider extends ModuleFinder {
+    }
+
+    public interface SomeProvider extends ResourceBundleProvider {
+    }
+
+    public class AnotherProviderImpl implements AnotherProvider {
+        @Override
+        public Optional<ModuleReference> find(String name) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Set<ModuleReference> findAll() {
+            return null;
+        }
+    }
+
+    public class SomeProviderImpl implements SomeProvider {
+        @Override
+        public ResourceBundle getBundle(String baseName, Locale locale) {
+            return new ResourceBundle() {
+                @Override
+                protected Object handleGetObject(String key) {
+                    return null;
+                }
+
+                @Override
+                public Enumeration<String> getKeys() {
+                    return null;
+                }
+            };
+        }
     }
 }

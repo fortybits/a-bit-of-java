@@ -8,17 +8,6 @@ import java.util.stream.Stream;
 
 public class ImmutableAndUnmodifiable {
 
-    record Person(String name, LocalDateTime date, boolean attend, int age, List<String> languagesSpoken,
-                  List<Address> addresses, String address) {
-        Person(String name) {
-            this(name, null, false, 0, List.of(), List.of(), null);
-        }
-    }
-
-    record Address(String city, String houseNumber) {
-    }
-
-
     public static void main(String[] args) {
 
         List<Person> persons = Stream.of(new Person("stackoverflow")).collect(Collectors.toList());
@@ -36,5 +25,15 @@ public class ImmutableAndUnmodifiable {
 
         immutableList.add(new Person("nmn"));
         unmodifiableList.add(new Person("nmn"));
+    }
+
+    record Person(String name, LocalDateTime date, boolean attend, int age, List<String> languagesSpoken,
+                  List<Address> addresses, String address) {
+        Person(String name) {
+            this(name, null, false, 0, List.of(), List.of(), null);
+        }
+    }
+
+    record Address(String city, String houseNumber) {
     }
 }

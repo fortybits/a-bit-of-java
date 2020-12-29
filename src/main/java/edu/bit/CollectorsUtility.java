@@ -1,7 +1,6 @@
-package edu.bit.__dump;
+package edu.bit;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -9,24 +8,20 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public class CollectorsTeeing {
+public class CollectorsUtility {
 
-    public static void main(String[] args) {
-        Function<BigDecimal, BigDecimal> func1 = x -> x;
-        Function<BigDecimal, BigDecimal> func2 = y -> y;
-        Map<Integer, BigDecimal> data = new HashMap<>();
 
-        Map.Entry<Map<Integer, BigDecimal>, List<BigDecimal>> result = data.entrySet().stream()
+    public Map.Entry<Map<Integer, BigDecimal>, List<BigDecimal>> teeingSample(Map<Integer, BigDecimal> data,
+                                                                              Function<BigDecimal, BigDecimal> func1,
+                                                                              Function<BigDecimal, BigDecimal> func2) {
+        return data.entrySet().stream()
                 .collect(Collectors.teeing(
-                        Collectors.toMap(
-                                Map.Entry::getKey,
-                                i -> func1.apply(i.getValue())),
-                        Collectors.mapping(
-                                i -> func1.andThen(func2).apply(i.getValue()),
-                                Collectors.toList()),
+                        Collectors.toMap(Map.Entry::getKey, i -> func1.apply(i.getValue())),
+                        Collectors.mapping(i -> func1.andThen(func2).apply(i.getValue()), Collectors.toList()),
                         Map::entry));
     }
 
+    // custom implementation of the teeing collector before the API was introduced
     public static <T, A1, A2, R1, R2, R> Collector<T, ?, R> teeing(
             Collector<? super T, A1, R1> downstream1,
             Collector<? super T, A2, R2> downstream2,

@@ -11,6 +11,5 @@ module a.bit.of.java {
 
     requires lombok;
 
-    exports edu.bit.functional;
-    exports edu.bit.process to jdk.internal.ed;
+    exports edu.bit to jdk.internal.ed;
 }

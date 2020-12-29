@@ -1,69 +1,52 @@
-package edu.bit.__dump;
+package edu.bit;
 
+import edu.bit.__dump.SimpleKeySupplier;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
-public class StreamUtility {
+public class StreamsUtility {
 
+    public static void calculateAverageValuePerGroup() {
+        record Item(String groupName, Double value) {
+        }
+        List<Item> items = Arrays.asList(
+                new Item("A", 1.0),
+                new Item("A", 1.0),
+                new Item("B", 1.0)
+        );
+        double result = items.stream()
+                .collect(Collectors.collectingAndThen(
+                        Collectors.groupingBy(Item::groupName, Collectors.summingDouble(Item::value)),
+                        map -> map.values().stream().mapToDouble(Double::doubleValue).sum() / map.size()));
+        System.out.println(result);
 
-    record EmployeeContract(Long id, Date date) {
-    }
+        double res = items.stream()
+                .collect(Collectors.groupingBy(Item::groupName, Collectors.averagingDouble(Item::value)))
+                .values().stream().mapToDouble(v -> v).average().orElse(Double.NaN);
+        System.out.println(res);
 
-    record Student(String name, int age, Country country, int score, List<Subject> subjects) {
-    }
+        long distinct = items.stream().map(Item::groupName).distinct().count();
+        double sums = items.stream().mapToDouble(Item::value).sum();
+        System.out.println(sums / distinct);
 
-    public enum Country {POLAND, UK, GERMANY}
-
-
-    record Subject(String name, Integer marks, boolean optional) {
-    }
-
-    record Author(String lastName, int age) {
-    }
-
-    record Book(Author author) {
-    }
-
-
-    record CarShop(String carName, int cost, Set<String> colors) {
-    }
-
-    record MyDTO(int amount) {
-    }
-
-    record Person(String name, LocalDateTime date, boolean attend, int age, List<String> languagesSpoken,
-                  List<Address> addresses, String address) {
-    }
-
-    record Address(String city, String houseNumber) {
-    }
-
-    record Employee(int id, int salary, List<Employee> subordinates, Department department, String gender) {
-    }
-
-    record Department() {
-    }
-
-    record Stake(int customerId, int betOfferI, int stake) {
-    }
-
-    record LineItem() {
-    }
-
-    record Order(String customerName, List<LineItem> lineItems) {
     }
 
     public static void main(String[] args) {
@@ -162,9 +145,12 @@ public class StreamUtility {
         return listOLists.indexOf(Collections.min(listOLists, Comparator.comparingInt(List::size)));
     }
 
-    private static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+    public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
         return t -> seen.add(keyExtractor.apply(t));
+        // previously
+        // Map<Object,Boolean> seen = new ConcurrentHashMap<>();
+        // return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 
     @SuppressWarnings("unchecked")
@@ -341,9 +327,6 @@ public class StreamUtility {
                 .orElse(null);
     }
 
-    record Node(int degree) {
-    }
-
     private static Map<Long, List<Long>> swapValuesToKeyInAMap(Map<Long, List<Long>> skuMap) {
 //        Map<Long, List<Long>> actMap = new HashMap<>();
 //        skuMap.forEach((k, v) -> v.forEach(val -> actMap.computeIfAbsent(val, key -> new ArrayList<>()).add(val)));
@@ -488,7 +471,7 @@ public class StreamUtility {
     private List<Stake> filteredStakeForDistinctCustomer(List<Stake> stakes, int maxBetOfferId) {
         return stakes.stream()
                 .filter(s -> s.betOfferI() == maxBetOfferId) // maxProductOfNonOverlappingPallindromes betOfferId
-                .filter(StreamUtility.distinctByKey(Stake::customerId)) // distinct customer Id
+                .filter(StreamsUtility.distinctByKey(Stake::customerId)) // distinct customer Id
                 .limit(20) // limit to 20
                 .collect(toList());
     }
@@ -538,6 +521,54 @@ public class StreamUtility {
                                 minPrice.getOrDefault(priceGroup.getPriceName(), 10000000)));
     }
 
+    public enum Country {POLAND, UK, GERMANY}
+
+    record EmployeeContract(Long id, Date date) {
+    }
+
+    record Student(String name, int age, Country country, int score, List<Subject> subjects) {
+    }
+
+    record Subject(String name, Integer marks, boolean optional) {
+    }
+
+    record Author(String lastName, int age) {
+    }
+
+    record Book(Author author) {
+    }
+
+    record CarShop(String carName, int cost, Set<String> colors) {
+    }
+
+    record MyDTO(int amount) {
+    }
+
+    record Person(String name, LocalDateTime date, boolean attend, int age, List<String> languagesSpoken,
+                  List<Address> addresses, String address) {
+    }
+
+    record Address(String city, String houseNumber) {
+    }
+
+    record Employee(int id, int salary, List<Employee> subordinates, Department department, String gender) {
+    }
+
+    record Department() {
+    }
+
+    record Stake(int customerId, int betOfferI, int stake) {
+    }
+
+    record LineItem() {
+    }
+
+    record Order(String customerName, List<LineItem> lineItems) {
+    }
+
+    record Node(int degree) {
+    }
+
     @Getter
     public class PriceGroup {
         String priceName;
@@ -549,4 +580,297 @@ public class StreamUtility {
         String priceName;
         Integer price;
     }
+
+    public void dropWhileVersusTakeWhile() {
+        Stream.of("a", "b", "c", "de", "f", "g", "h")
+                .peek(System.out::println)
+                .takeWhile(s -> s.length() <= 1)
+                .collect(Collectors.toList()).forEach(System.out::println);
+
+        Stream.of("a", "b", "c", "de", "f", "g", "h")
+                .peek(s -> System.out.print(s + ", "))
+                .dropWhile(s -> s.length() <= 1)
+                .collect(Collectors.toList()).forEach(System.out::println);
+
+        Stream.of("a", "b", "c", "de", "f", "g", "h")
+                .dropWhile(s -> {
+                    System.out.println("dropWhile: " + s);
+                    return s.length() <= 1;
+                })
+                .peek(s -> System.out.println("collecting " + s))
+                .collect(Collectors.toList()).forEach(System.out::println);
+    }
+
+    public static void groupByAndSort(String[] args) {
+        List<String> items = Arrays.asList("apple", "apple", "banana", "apple", "orange", "banana", "papaya");
+
+        // 1.1== >Group by a List and display the total count of it
+        Map<String, Long> result =
+                items.stream().sorted().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        System.out.println("RESULT : " + result);
+
+        // 1.2 Add sorting
+        Map<String, Long> finalMap = new LinkedHashMap<>();
+        result.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .forEachOrdered(e -> finalMap.put(e.getKey(), e.getValue()));
+        System.out.println("FINAL RESULT : " + finalMap);
+    }
+
+    /**
+     * Like {@code DoubleSummaryStatistics}, {@code IntSummaryStatistics}, and
+     * {@code LongSummaryStatistics}, but for {@link BigDecimal}.
+     * The code has been a referred from the following stackoverflow source
+     * https://stackoverflow.com/questions/51645432/bigdecimal-summary-statistics
+     */
+    public static class BigDecimalSummaryStatistics implements Consumer<BigDecimal> {
+
+        private BigDecimal sum = BigDecimal.ZERO, min, max;
+        private long count;
+
+        public static Collector<BigDecimal, ?, BigDecimalSummaryStatistics> statistics() {
+            return Collector.of(BigDecimalSummaryStatistics::new,
+                    BigDecimalSummaryStatistics::accept, BigDecimalSummaryStatistics::merge);
+        }
+
+        public void accept(BigDecimal t) {
+            if (count == 0) {
+                Objects.requireNonNull(t);
+                count = 1;
+                sum = t;
+                min = t;
+                max = t;
+            } else {
+                sum = sum.add(t);
+                if (min.compareTo(t) > 0) min = t;
+                if (max.compareTo(t) < 0) max = t;
+                count++;
+            }
+        }
+
+        private BigDecimalSummaryStatistics merge(BigDecimalSummaryStatistics s) {
+            if (s.count > 0) {
+                if (count == 0) {
+                    count = s.count;
+                    sum = s.sum;
+                    min = s.min;
+                    max = s.max;
+                } else {
+                    sum = sum.add(s.sum);
+                    if (min.compareTo(s.min) > 0) min = s.min;
+                    if (max.compareTo(s.max) < 0) max = s.max;
+                    count += s.count;
+                }
+            }
+            return this;
+        }
+
+        public long getCount() {
+            return count;
+        }
+
+        public BigDecimal getSum() {
+            return sum;
+        }
+
+        public BigDecimal getAverage(MathContext mc) {
+            return count < 2 ? sum : sum.divide(BigDecimal.valueOf(count), mc);
+        }
+
+        public BigDecimal getMin() {
+            return min;
+        }
+
+        public BigDecimal getMax() {
+            return max;
+        }
+
+        @Override
+        public String toString() {
+            return count == 0 ? "empty" : (count + " elements between " + min + " and " + max + ", sum=" + sum);
+        }
+    }
+
+    // pattern to simplify code using Predicate
+    int totalValues(List<Integer> numbers) {
+        int total = 0;
+        for (int e : numbers) {
+            total += e;
+        }
+        return total;
+    }
+
+    int totalEvenValues(List<Integer> numbers) {
+        int total = 0;
+        for (int e : numbers) {
+            if (e % 2 == 0) total += e;
+        }
+        return total;
+    }
+
+    int totalOddValues(List<Integer> numbers) {
+        int total = 0;
+        for (int e : numbers) {
+            if (e % 2 != 0) total += e;
+        }
+        return total;
+    }
+
+
+    // use of predicate could simplify all these use cases into a common method
+    int totalValues(List<Integer> numbers, Predicate<Integer> selector) {
+        return numbers.stream()
+                .mapToInt(e -> e)
+                .filter(selector::test)
+                .sum();
+    }
+
+    // optimised
+    int optimisedTotalValues(Collection<Integer> numbers, Predicate<Integer> selector) {
+        return numbers.stream()
+                .filter(selector)
+                .reduce(0, Integer::sum);
+    }
+
+
+    // a new API introduced since Java-11 to transform patterns into matching predicates
+    public void asMatchPredicateWithPatterns() {
+        var languages = List.of("c#", "java", "python", "scala");
+        var p = Pattern.compile("[a-z]{4}");
+
+        for (String lang : languages) {
+            if (p.matcher(lang).matches()) {
+                System.out.println(lang);
+            }
+        }
+
+        languages.stream()
+                .filter(s -> p.matcher(s).matches())
+                .forEach(System.out::println);
+
+        languages.stream()
+                .filter(Predicate.not(p.asMatchPredicate())) //here
+                .forEach(System.out::println);
+    }
+
+    private static List<User> userListWithSameEmailAndMergeLists(List<User> users) {
+        return new ArrayList<>(users.stream()
+                .collect(Collectors.toMap(User::email, Function.identity(), (user1, user2) -> {
+                    List<Integer> l1 = user1.lists();
+                    List<Integer> l2 = user2.lists();
+                    List<Integer> merge = IntStream.range(0, l1.size())
+                            .mapToObj(i -> (l1.get(i) == 0 && l2.get(i) == 0) ? 0 : 1)
+                            .collect(Collectors.toList());
+                    return new User(user1.email(), merge);
+                })).values());
+    }
+
+    private static Map<Integer, List<Integer>> collectGroupingByAndMapping(List<ProductCatalogue> productCatalogueList) {
+        return productCatalogueList.stream()
+                .collect(Collectors.groupingBy(ProductCatalogue::pId,
+                        Collectors.mapping(ProductCatalogue::cId, Collectors.toList())));
+
+    }
+
+    private static List<Stake> stakesHighestPerCustomerForParticularStakeLimited(List<Stake> stakes, int maxBetOfferId) {
+        return stakes.stream()
+                .filter(x -> x.betOfferI() == maxBetOfferId) // retains only objects where their offer is if equal to the supplied offerId
+                .collect(toMap(Stake::customerId,    // customer ids do not repeat as you've mentioned.
+                        Function.identity(),
+                        BinaryOperator.maxBy(Comparator.comparingInt(Stake::stake))))  //   gets the highest stake values customer wise.
+                .values()
+                .stream()
+                .collect(groupingBy(Stake::stake)) // particular stake
+                .values()
+                .stream()
+                .flatMap(x -> x.stream().limit(20)) //  and limited to 20 customers for a particular stake.
+                .collect(Collectors.toList());
+    }
+
+    record Stake(int customerId, int betOfferI, int stake) {
+    }
+
+    record User(String name, String id, String email, List<Integer> lists, int age) {
+        User(String email, List<Integer> lists) {
+            this(null, null, email, lists, 0);
+        }
+    }
+
+    record ProductCatalogue(Integer pId, Integer cId) {
+    }
+
+
+    public void collectorInference() {
+        List<BlogPost> posts = new ArrayList<>();
+        Function<? super BlogPost, ? extends BlogPostType> classifier = BlogPost::getType;
+        Map<BlogPostType, List<BlogPost>> postsPerType = posts.stream()
+                .collect(groupingBy(classifier));
+    }
+
+    private static class BlogPostType {
+    }
+
+    private static class BlogPost {
+        BlogPostType type;
+
+        public BlogPostType getType() {
+            return type;
+        }
+    }
+
+    public void collectAtOnceUsingStreamConcat() throws ParseException {
+        Info info1 = new Info(1L, getDateFromStr("2018-02-02T10:00:00"), 3L);
+        Info info2 = new Info(2L, getDateFromStr("2018-02-02T12:00:00"), 3L);
+        Info info3 = new Info(3L, getDateFromStr("2018-02-05T12:00:00"), 6L);
+        Info info4 = new Info(4L, getDateFromStr("2018-02-05T10:00:00"), 6L);
+        List<Info> listInfo = List.of(info1, info2, info3, info4);
+        Date date = getDateFromStr("2018-02-03T10:10:10");
+
+
+        BiFunction<Info, Info, Info> remapping = (i1, i2) -> i1.date().getTime() > i2.date().getTime() ? i1 : i2;
+        // filter 1: less date - group by maxProductOfNonOverlappingPallindromes date by groupId
+        Map<Long, Info> map = new HashMap<>();
+        List<Info> listMoreByDate = new ArrayList<>();
+        for (Info info : listInfo) {
+            if (info.date().getTime() < date.getTime()) {
+                map.merge(info.groupId(), info, remapping);
+            } else {
+                listMoreByDate.add(info);
+            }
+        }
+        List<Info> listResult = new ArrayList<>(map.values());
+        listResult.addAll(listMoreByDate);
+
+
+        // holger solved it
+        List<Info> listResult2 = Stream.concat(
+                listInfo.stream()
+                        .filter(info -> info.date().getTime() < date.getTime())
+                        .collect(toMap(Info::groupId, Function.identity(),
+                                BinaryOperator.maxBy(Comparator.comparing(Info::date))))
+                        .values().stream(),
+                listInfo.stream()
+                        .filter(info -> info.date().getTime() >= date.getTime()))
+                .collect(Collectors.toList());
+
+        System.out.println("result: " + listResult);
+    }
+
+    private static Date getDateFromStr(String dateStr) throws ParseException {
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(dateStr);
+    }
+
+    private record Info(Long id, Date date, Long groupId) {
+    }
+
+    public void collectorToUnmodifiableList() {
+        var result = Stream.of(1, 2, 3, 4, null, 5)
+                .collect(Collectors.collectingAndThen(Collectors.toList(),
+                        Collections::unmodifiableList));
+        System.out.println(result);
+
+        var result2 = Stream.of(1, 2, 3, 4)
+                .collect(Collectors.toUnmodifiableList());
+        System.out.println(result2);
+    }
+
 }

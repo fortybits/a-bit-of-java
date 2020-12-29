@@ -59,7 +59,7 @@ public class PublisherSubscriber {
 
             System.out.println("Received : " + item);
             lastItem += 1; // expect increment by 1
-    //        assertTrue(lastItem == item);
+            //        assertTrue(lastItem == item);
         }
 
         @Override

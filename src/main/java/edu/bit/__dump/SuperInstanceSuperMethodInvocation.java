@@ -2,6 +2,11 @@ package edu.bit.__dump;
 
 public class SuperInstanceSuperMethodInvocation {
 
+    public static void main(String[] args) {
+        Jedi jedi = new Luke();
+        jedi.attack();
+    }
+
     static class Jedi {
         static void attack() {
             System.out.println("Jedi's attack.");
@@ -12,10 +17,5 @@ public class SuperInstanceSuperMethodInvocation {
         static void attack() {
             System.out.println("Luke's attack.");
         }
-    }
-
-    public static void main(String[] args) {
-        Jedi jedi = new Luke();
-        jedi.attack();
     }
 }

@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static edu.bit.__dump.DistinctByKeys.distinctByKey;
+import static edu.bit.StreamsUtility.distinctByKey;
 
 public class GroupingAndFilteringToCount {
 
