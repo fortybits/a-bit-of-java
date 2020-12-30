@@ -20,43 +20,24 @@ public class MergeMapsBasedOnCondition {
         otherBills.put("GOOD", new Discount(20, "M6"));
 
         Map<String, Discount> finalMap = new HashMap<>();
-        otherBills.forEach((k, v) -> finalMap.merge(k, v, (discountFromPrepaid, discountFromOtherBill) -> finalMap.put(k,
-                new Discount(prepaid.get(k).getAmount() + v.getAmount(), v.getLastMarketingRegion()))));
+        otherBills.forEach((k, v) ->
+                finalMap.merge(k, v, (discountFromPrepaid, discountFromOtherBill) ->
+                        finalMap.put(k, new Discount(prepaid.get(k).amount() + v.amount(), v.lastMarketingRegion()))));
 
 
         List<Map<String, Discount>> discList = new ArrayList<>();
         discList.add(prepaid);
         discList.add(otherBills);
 
-
         Map<String, Discount> result = discList.stream()
                 .flatMap(m -> m.entrySet().stream())
-                .collect(
-                        Collectors.groupingBy(Map.Entry::getKey,
-                                Collectors.mapping(Map.Entry::getValue,
-                                        Collectors.reducing(new Discount(0, "Invalid"),
-                                                (o1, o2) -> new Discount(o1.getAmount() + o2.getAmount(), o2.getLastMarketingRegion())))));
+                .collect(Collectors.groupingBy(Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue,
+                                Collectors.reducing(new Discount(0, "Invalid"),
+                                        (o1, o2) -> new Discount(o1.amount() + o2.amount(),
+                                                o2.lastMarketingRegion())))));
     }
 
-    public static class Discount {
-        int amount;
-        String lastMarketingRegion;
-
-        Discount(int amount, String lastMarketingRegion) {
-            this.amount = amount;
-            this.lastMarketingRegion = lastMarketingRegion;
-        }
-
-        public int getAmount() {
-            return amount;
-        }
-
-        public String getLastMarketingRegion() {
-            return lastMarketingRegion;
-        }
-
-        public String toString() {
-            return String.format("{%s,\"%s\"}", amount, lastMarketingRegion);
-        }
+    record Discount(int amount, String lastMarketingRegion) {
     }
 }

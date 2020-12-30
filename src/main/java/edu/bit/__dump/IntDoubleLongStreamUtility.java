@@ -13,7 +13,7 @@ public class IntDoubleLongStreamUtility {
 
     public static void main(String[] args) {
 
-        // intstream map and sum separted out
+// Intstream map and sum separted out
 //        IntStream is = IntStream.of(1, 2, 3, 4);
 //        is.map(i -> i + 1);
 //        int sum = is.sum();
@@ -32,6 +32,7 @@ public class IntDoubleLongStreamUtility {
         IntStream inStream = Stream.generate(new AtomicInteger(1)::getAndIncrement)
                 .limit(10)
                 .mapToInt(t -> t);
+
         inStream.forEach(System.out::println);
 
         IntStream.generate(new AtomicInteger(1)::getAndIncrement)

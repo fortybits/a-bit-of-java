@@ -1,10 +1,12 @@
 package edu.bit;
 
-import edu.bit.__dump.SimpleKeySupplier;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.nio.file.Files;
@@ -18,10 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.stream.*;
 
 import static java.util.stream.Collectors.*;
 
@@ -495,6 +494,28 @@ public class StreamsUtility {
         return orders.stream()
                 .collect(Collectors.groupingBy(Order::customerName,
                         Collectors.flatMapping(order -> order.lineItems().stream(), Collectors.toSet())));
+    }
+
+
+    public class SimpleKeySupplier implements Supplier<String> {
+        private final String keyPrefix;
+        private final int numToGenerate;
+        private int numGenerated;
+
+        public SimpleKeySupplier(String keyPrefix, int numRecs) {
+            this.keyPrefix = keyPrefix;
+            numToGenerate = numRecs;
+            numGenerated = 0;
+        }
+
+        @Override
+        public String get() {
+            if (numGenerated >= numToGenerate) {
+                return null;
+            } else {
+                return (keyPrefix + numGenerated++);
+            }
+        }
     }
 
     private void consumeObjectsProvidedBySupplier() {
@@ -1055,5 +1076,238 @@ public class StreamsUtility {
 
     Stream<Long> flatMapTwoDimensionalArray(long[][] array) {
         return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
+    }
+
+    //
+    record Coordinate(String x, String y) {
+    }
+
+    public void groupingAndFilteringToCount(Collection<Coordinate> myList) {
+        Map<String, Long> r = myList.stream()
+                .collect(Collectors.groupingBy(Coordinate::x))
+                .entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> e.getValue().stream()
+                                .filter(distinctByKey(Coordinate::y)).count()));
+
+        Map<String, Integer> res = myList.stream()
+                .collect(Collectors.groupingBy(Coordinate::x,
+                        Collectors.mapping(Coordinate::y,
+                                Collectors.collectingAndThen(Collectors.toSet(), Set::size))));
+
+        // filtering as downstream considers the keys with value as 0
+        Map<String, Long> result1 = myList.stream()
+                .collect(Collectors.groupingBy(Coordinate::x,
+                        Collectors.filtering(distinctByKey(Coordinate::y),
+                                Collectors.counting())));
+
+        // groupingBy as a downstream on the other hand doesn't result in values with 0 count once filtered
+        Map<String, Long> result2 = myList.stream()
+                .collect(Collectors.filtering(distinctByKey(Coordinate::y),
+                        Collectors.groupingBy(Coordinate::x, Collectors.counting())));
+
+        Map<String, Long> result3 = myList.stream()
+                .filter(distinctByKey(Coordinate::x))
+                .collect(Collectors.groupingBy(Coordinate::x, Collectors.counting()));
+    }
+
+
+    // constructing a hashmap from a string e.g "t12345-g1234-o1234", this was stated
+    // at https://stackoverflow.com/questions/52137069/hashmap-using-streams-and-substring
+    public Map<String, String> constructHashMapUsingSubstringsFromAString(String lines) {
+        return Arrays.stream(lines.split("-"))
+                .collect(Collectors.toMap(s -> s.substring(0, 1), s -> s.substring(1)));
+    }
+
+    // to find the candidate with highest marks and to return onnly f the student is unique(only one) with those marks
+    record Candidate(int marks) {
+    }
+
+    private Candidate highestMarkUniqueCandidate(List<Candidate> studentList) {
+        TreeMap<Integer, List<Candidate>> map = studentList.stream()
+                .collect(Collectors.groupingBy(Candidate::marks, TreeMap::new,
+                        Collectors.mapping(e -> e, Collectors.toList())));
+        if (map.firstEntry().equals(map.lastEntry())) {
+            return null;
+        }
+        List<Candidate> highestMarkStudents = map.lastEntry().getValue();
+        return highestMarkStudents.size() == 1 ? highestMarkStudents.get(0) : null;
+    }
+
+
+    // Modified version of an answer to https://stackoverflow.com/questions/53307682/how-to-interleave-merge-two-java-8-streams
+    public <T> Stream<T> interleaveStreams(Stream<? extends T> a, Stream<? extends T> b) {
+        Spliterator<? extends T> spA = a.spliterator();
+        Spliterator<? extends T> spB = b.spliterator();
+        long s = spA.estimateSize() + spB.estimateSize();
+        if (s < 0) s = Long.MAX_VALUE;
+        int ch = spA.characteristics() & spB.characteristics()
+                & (Spliterator.NONNULL | Spliterator.SIZED);
+        ch |= Spliterator.ORDERED;
+
+        return StreamSupport.stream(new Spliterators.AbstractSpliterator<>(s, ch) {
+            Spliterator<? extends T> sp1 = spA;
+            Spliterator<? extends T> sp2 = spB;
+
+            @Override
+            public boolean tryAdvance(Consumer<? super T> action) {
+                Spliterator<? extends T> sp = sp1;
+                if (sp.tryAdvance(action)) {
+                    sp1 = sp2;
+                    sp2 = sp;
+                    return true;
+                }
+                return sp2.tryAdvance(action);
+            }
+        }, false);
+    }
+
+    public static class InputStreamToStream {
+
+        public Stream<byte[]> toStreamGenerate(final InputStream is, final int bufferSize) {
+    //        return Stream.of(is.readNBytes(bufferSize));
+    //        return Stream.of(is.readAllBytes());
+            return Stream.generate(() -> {
+                try {
+                    return is.readNBytes(bufferSize);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).takeWhile(b -> b.length > 0);
+        }
+
+
+        public Stream<byte[]> toStream(InputStream is, int bufferSize) {
+            return StreamSupport.stream(new ChunkInputStreamSpliterator(is, bufferSize), false);
+        }
+
+        public static class ChunkInputStreamSpliterator implements Spliterator<byte[]> {
+
+            private final InputStream is;
+            private final int bufferSize;
+
+            public ChunkInputStreamSpliterator(InputStream is, int bufferSize) {
+                this.is = is;
+                this.bufferSize = bufferSize;
+            }
+
+            @Override
+            public boolean tryAdvance(Consumer<? super byte[]> action) {
+                byte[] bytes;
+                try {
+                    bytes = this.is.readNBytes(this.bufferSize);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                if (bytes.length == 0)
+                    return false;
+                action.accept(bytes);
+                return true;
+            }
+
+            @Override
+            public Spliterator<byte[]> trySplit() {
+                return null; // cannot split an InputStream
+            }
+
+            @Override
+            public long estimateSize() {
+                return Long.MAX_VALUE; // unknown
+            }
+
+            @Override
+            public int characteristics() {
+                return Spliterator.ORDERED | Spliterator.NONNULL;
+            }
+
+        }
+    }
+
+    //
+    public static double[] sumUpColumns(double[][] x) {
+        return IntStream.range(0, Stream.of(x).mapToInt(a -> a.length).max().orElse(0))
+                .mapToDouble(i -> Arrays.stream(x)
+                        .mapToDouble(item -> i < item.length ? item[i] : 0.0)
+                        .sum())
+                .toArray();
+    }
+
+    public static double[] sumUpRows(double[][] x) {
+        return Stream.of(x)
+                .mapToDouble((double[] row) -> DoubleStream.of(row).sum())
+                .toArray();
+    }
+
+    //
+    public void streamOfNullable() {
+        long one = Stream.ofNullable("42").count();
+        long zero = Stream.ofNullable(null).count();
+        System.out.println(one);
+        System.out.println(zero);
+    }
+
+    //
+    public void streamFromOptional() {
+        Optional<Integer> a = Optional.empty();
+        Optional<Integer> b = null;
+        Optional<Integer> aOrB = a.or(() -> b);
+
+
+        Optional<String> optional = null;
+        if (optional != null) {
+            // execute either println or ()
+            optional.ifPresentOrElse(System.out::println, () -> {
+                System.out.println("");
+            });
+        }
+
+        // return either optional or supplier
+        optional.or(StreamsUtility::supplier);
+
+
+        // stream of optional
+        Stream<Optional<Integer>> so = Stream.empty();
+        Stream<Integer> s = so.flatMap(Optional::stream);
+        Optional<Stream<Integer>> os = Optional.of(s);
+    }
+
+    private static Optional<? extends String> supplier() {
+        return Optional.of("");
+    }
+
+    //
+    public void iterateStream() {
+        Stream.iterate(1, i -> 2 * i).forEach(System.out::println);
+
+        Stream.iterate(1, i -> i <= 10, i -> 2 * i)
+                .forEach(System.out::println);
+    }
+
+    //
+    public static void partitionGroupSummingInt(List<Officer> off) {
+        int totalDaysInOffice = off.stream().mapToInt(Officer::totalDaysInOffice).sum();
+
+        List<Officer> officerList = Arrays.asList(new Officer("John", 5000),
+                new Officer("Matthew", 3000), new Officer("Robert", 2000),
+                new Officer("Dave", 2000), new Officer("Patrick", 10000));
+
+        Map<Boolean, Map<Officer, Integer>> collect = officerList.stream()
+                .collect(Collectors.partitioningBy(o -> o.totalDaysInOffice() >= 10000,
+                        Collectors.groupingBy(o -> o, Collectors.summingInt(Officer::totalDaysInOffice))));
+        System.out.println(collect);
+    }
+
+    record Officer(String name, int totalDaysInOffice) {
+    }
+
+    // spliterators are the way to perform anaotmy on the streams operations
+    public void parallelSpliteratorCharacteristics() {
+        System.out.println(Stream.of(1L, 2L, 3L).spliterator().characteristics()); //
+        System.out.println(Stream.of(1L, 2L, 3L).limit(2).spliterator().characteristics());  // ORDERED
+        System.out.println(Stream.of(1L, 2L, 3L).limit(2).parallel().spliterator().characteristics()); // SUBSIZED, ORDERED, SIZED
+        Spliterator spliterator = Stream.of(1L, 2L, 3L).limit(2).spliterator();
+        Stream stream = StreamSupport.stream(spliterator, true);
+        System.out.println(spliterator.characteristics()); // ORDERED
+        System.out.println(stream.spliterator().characteristics()); // ORDERED
     }
 }

@@ -1,5 +1,7 @@
 package edu.bit.__dump;
 
+import edu.bit.Basics;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -11,8 +13,8 @@ public class VarHandleTest {
 
         //        such lookup to obtain a VarHandle for a field named i of type int on a receiver class Foo might be performed as follows:
         VarHandle fieldHandle = MethodHandles.lookup().
-                in(Question.class).
-                findVarHandle(Question.class, "votes", int.class);
+                in(Basics.Question.class).
+                findVarHandle(Basics.Question.class, "votes", int.class);
 
 
         //        a VarHandle to an array of int may be created as follows:
@@ -24,11 +26,11 @@ public class VarHandleTest {
                 long[].class, java.nio.ByteOrder.BIG_ENDIAN);
 
         //        to produce a MethodHandle to the "compareAndSet" access mode for a particular variable kind and type:
-        Question q = new Question();
+        Basics.Question q = new Basics.Question();
         MethodHandle mhToVhCompareAndSet = MethodHandles.publicLookup().findVirtual(
                 VarHandle.class,
                 "compareAndSet",
-                MethodType.methodType(boolean.class, Question.class, int.class, int.class));
+                MethodType.methodType(boolean.class, Basics.Question.class, int.class, int.class));
 
         //        The MethodHandle can then be invoked with a variable kind and type compatible VarHandle instance as the first parameter:
         boolean r = (boolean) mhToVhCompareAndSet.invokeExact(fieldHandle, q, 0, 1);
@@ -37,7 +39,7 @@ public class VarHandleTest {
         //        Such a MethodHandle lookup using findVirtual will perform an asType transformation to adjust arguments and return values.
         MethodHandle mhToVhCompareAndSet2 = MethodHandles.varHandleExactInvoker(
                 VarHandle.AccessMode.COMPARE_AND_SET,
-                MethodType.methodType(boolean.class, Question.class, int.class, int.class));
+                MethodType.methodType(boolean.class, Basics.Question.class, int.class, int.class));
 
         boolean r1 = (boolean) mhToVhCompareAndSet2.invokeExact(fieldHandle, q, 0, 1);
 

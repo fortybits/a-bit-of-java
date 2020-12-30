@@ -134,4 +134,50 @@ public class GenericsUtility {
         record CheckRequest<A>(A operationRequest) {
         }
     }
+
+    // example of more generics implementation witth enums and intersection allowed
+    private <T extends Enum<T> & InterfaceA> void moreGenerics(Class<T> type) {
+        Map<String, Class<T>> filter = new HashMap<>();
+        filter.put("a", type);
+        importSettingViaEnum(filter.get("a"));
+    }
+
+    private static void f(int ordinal) {
+        System.out.println("f");
+    }
+
+    private <T extends Enum<T> & InterfaceA> void importSettingViaEnum(Class<? extends T> clazz) {
+        for (T elem : clazz.getEnumConstants()) {
+            f(elem.ordinal());
+            elem.foo();
+        }
+    }
+
+    public enum EnumA implements InterfaceA {
+        RED();
+
+        public Object[] foo() {
+            System.out.println("g");
+            return null;
+        }
+    }
+
+    public enum EnumB implements InterfaceA {
+        OAK();
+
+        public Object[] foo() {
+            System.out.println("g");
+            return null;
+        }
+    }
+
+    public interface InterfaceA {
+        Object[] foo();
+    }
+
+    // generic utility for sorting any Map by keys and then by values
+    public <T, K extends Comparable<K>> void sortAMapByKeyThenValues(Map<T, List<K>> yourMap) {
+        Map<T, List<K>> sortedByKey = new TreeMap<>(yourMap);
+        sortedByKey.values().forEach(Collections::sort);
+    }
 }

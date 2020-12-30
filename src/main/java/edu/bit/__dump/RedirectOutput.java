@@ -5,12 +5,7 @@ import java.io.IOException;
 
 public class RedirectOutput {
 
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        redirectToFileTest();
-    }
-
-    private static void redirectToFileTest() throws IOException, InterruptedException {
+    private void redirectToFile() throws IOException, InterruptedException {
         File outFile = new File("out.tmp");
         Process p = new ProcessBuilder("ls", "-la")
                 .redirectOutput(outFile)

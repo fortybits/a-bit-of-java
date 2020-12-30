@@ -1,6 +1,7 @@
 package edu.bit.__dump;
 
 public class ReferenceVariableCaptured {
+
     public static void main(String[] args) {
         Thread t = Thread.currentThread();
         Runnable run = new Runnable() {
