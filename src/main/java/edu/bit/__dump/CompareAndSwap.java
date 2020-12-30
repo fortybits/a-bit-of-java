@@ -10,8 +10,7 @@ public class CompareAndSwap {
 
     public static void main(String[] args) throws NoSuchFieldException, SecurityException {
 
-        Holder h = new Holder();
-        h.setValue(33);
+        Holder h = new Holder(33);
         Class<?> holderClass = Holder.class;
         long valueOffset = UNSAFE.objectFieldOffset(holderClass.getDeclaredField("value"));
         int result = 0;
@@ -44,11 +43,6 @@ public class CompareAndSwap {
         return null;
     }
 
-    public static class Holder {
-        private int value;
-
-        void setValue(int value) {
-            this.value = value;
-        }
+    record Holder(int value) {
     }
 }

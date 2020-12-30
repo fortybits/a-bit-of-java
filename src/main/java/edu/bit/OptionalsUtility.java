@@ -113,7 +113,7 @@ public class OptionalsUtility {
             return isPresent() ? this : OptionalString.of(supplier.get());
         }
 
-        String orElse(String other) {
+        public String orElse(String other) {
             return isPresent ? value : other;
         }
 

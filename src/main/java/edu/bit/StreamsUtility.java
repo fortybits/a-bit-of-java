@@ -1,8 +1,10 @@
 package edu.bit;
 
 import edu.bit.__dump.SimpleKeySupplier;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.nio.file.Files;
@@ -13,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
@@ -717,6 +720,8 @@ public class StreamsUtility {
 
 
     // use of predicate could simplify all these use cases into a common method
+    // the pattern is simplified further by using lambdas, this is covered in a video
+    // at https://www.youtube.com/watch?v=WN9kgdSVhDo&t=982s&ab_channel=Devoxx
     int totalValues(List<Integer> numbers, Predicate<Integer> selector) {
         return numbers.stream()
                 .mapToInt(e -> e)
@@ -786,9 +791,6 @@ public class StreamsUtility {
                 .collect(Collectors.toList());
     }
 
-    record Stake(int customerId, int betOfferI, int stake) {
-    }
-
     record User(String name, String id, String email, List<Integer> lists, int age) {
         User(String email, List<Integer> lists) {
             this(null, null, email, lists, 0);
@@ -797,7 +799,6 @@ public class StreamsUtility {
 
     record ProductCatalogue(Integer pId, Integer cId) {
     }
-
 
     public void collectorInference() {
         List<BlogPost> posts = new ArrayList<>();
@@ -873,4 +874,186 @@ public class StreamsUtility {
         System.out.println(result2);
     }
 
+    //
+    public long compareCharacterDifferencesBetweenStrings(String str1, String str2) {
+        return IntStream.range(0, str1.length())
+                .filter(i -> str1.charAt(i) != str2.charAt(i))
+                .count();
+    }
+
+    // common use case for grouping
+    public static void groupByStartAndEndDateToMerge() {
+        List<ReleaseTime> ungroupedAvailability = List.of();
+        Collection<ReleaseTime> mergedRegionsCollection = ungroupedAvailability.stream()
+                .collect(Collectors.toMap(t -> Arrays.asList(t.getStartDate(), t.getEndDate()),
+                        Function.identity(), ReleaseTime::mergeRegions))
+                .values();
+    }
+
+    @Getter
+    @AllArgsConstructor
+    class ReleaseTime {
+        private Date startDate;
+        private Date endDate;
+        private List<String> regions;
+
+        ReleaseTime mergeRegions(ReleaseTime that) {
+            return new ReleaseTime(this.startDate, this.endDate,
+                    Stream.concat(this.getRegions().stream(), that.getRegions().stream())
+                            .collect(Collectors.toList()));
+        }
+    }
+
+
+    //
+    public void compositePredicates() {
+        Stream<Integer> stream = Stream.of(5, 7, 9, 11, 13, 14, 21, 28, 35, 42, 49, 56, 63, 70, 71);
+        IntPredicate p0 = n -> n > 10;
+        IntPredicate p1 = n -> n % 2 != 0;
+        IntPredicate p2 = StreamsUtility::isPrime;
+        System.out.println(matchAll(stream, p0, p1, p2));
+        // should get [11, 13, 71]
+    }
+
+    private static boolean isPrime(Integer n) {
+        return IntStream.range(2, n) // note  division by zero possible in your attempt
+                .noneMatch(i -> n % i == 0);
+    }
+
+    private List<Integer> matchAll(Stream<Integer> input, IntPredicate... conditions) {
+        IntPredicate compositePredicate =
+                Arrays.stream(conditions)
+                        .reduce(IntPredicate::and)
+                        .orElse(p -> true);
+        return input.mapToInt(i -> i)
+                .filter(compositePredicate)
+                .boxed()
+                .collect(Collectors.toList());
+    }
+
+    // detailed in https://stackoverflow.com/questions/59154995/cleaning-a-list-of-data-in-java8/59156527#59156527
+    public <T> List<T> cleanDataInPlaceWithMappingFunction(List<T> data, List<Function<T, T>> cleanOps) {
+        return data.stream().map((str) -> {
+            T cleanData = str;
+            for (Function<T, T> function : cleanOps) {
+                cleanData = function.apply(cleanData);
+            }
+            return cleanData;
+        }).collect(Collectors.toList());
+    }
+
+    public <T> List<T> cleanDataByHolger(List<T> data, List<Function<T, T>> cleanOps) {
+        cleanOps.stream()
+                .reduce(Function::andThen)
+                .ifPresent(f -> data.replaceAll(f::apply));
+        return data;
+    }
+
+    public <T> List<T> cleanDataByHolgerOptimised(List<T> data, List<UnaryOperator<T>> cleanOps) {
+        cleanOps.stream()
+                .reduce((f1, f2) -> t -> f2.apply(f1.apply(t)))
+                .ifPresent(data::replaceAll);
+        return data;
+    }
+
+
+    //
+    List<String> generatingRandomListOfWords() {
+        int listSize = 10;
+        int maxWordSize = 10;
+        int[] letters = IntStream.range('A', 'Z').toArray();
+        return IntStream.range(0, listSize)
+                .mapToObj(ix -> ThreadLocalRandom.current()
+                        .ints(ThreadLocalRandom.current().nextInt(1, maxWordSize), 0, letters.length)
+                        .map(i -> letters[i])
+                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                        .toString())
+                .collect(Collectors.toList());
+    }
+
+
+    // collect to a treemap or a sorted map while using streams
+    public SortedMap<String, Long> skill_nApplicants(Map<String, Skill> skillMap) {
+        return skillMap.values().stream()
+                .collect(Collectors.toMap(Skill::name, Skill::numApplicants,
+                        (a, b) -> a, TreeMap::new));
+    }
+
+    public record Skill(String name, Long numApplicants) {
+    }
+
+
+    // conversion of a list or stream to a byte[] e.g. type widening to int and conversion to ByteArrayOutputStream
+    public static byte[] toByteArray(IntStream stream) {
+        return stream.collect(ByteArrayOutputStream::new, (baos, i) -> baos.write((byte) i),
+                (baos1, baos2) -> baos1.write(baos2.toByteArray(), 0, baos2.size()))
+                .toByteArray();
+    }
+
+    public static byte[] toByteArrayFunctional(List<Byte> listByte) {
+        return listByte.stream().collect(ByteArrayOutputStream::new, ByteArrayOutputStream::write,
+                (baos1, baos2) -> baos1.writeBytes(baos2.toByteArray()))
+                .toByteArray();
+    }
+
+    public static byte[] toByteArrayIterative(List<Byte> listByte) {
+        byte[] arrayBytes = new byte[listByte.size()];
+        IntStream.range(0, listByte.size()).forEach(i -> arrayBytes[i] = listByte.get(i));
+        return arrayBytes;
+    }
+
+    // custom comparator for a problem detailed in
+    // https://stackoverflow.com/questions/60914762/ignore-zero-values-at-sorted-in-lambda
+    public static <T> Comparator<T> zerosLast(ToIntFunction<? super T> keyExtractor) {
+        return (o1, o2) -> {
+            if (keyExtractor.applyAsInt(o1) == 0) {
+                return keyExtractor.applyAsInt(o2) == 0 ? 0 : 1;
+            } else {
+                return keyExtractor.applyAsInt(o2) == 0 ? -1 :
+                        Integer.compare(keyExtractor.applyAsInt(o1),
+                                keyExtractor.applyAsInt(o2));
+            }
+        };
+    }
+
+    // using multiple mappers to joining the output as a string from one object with varied attributes
+    public String extractSimilarAttributesFromEntityToCombinedString(SomeClass shipment) {
+        return Optional.ofNullable(shipment)
+                .map(SomeClass::bill)
+                .map(bill -> extractAttributes(bill, Bill::numberString, Bill::prefixString))
+                .orElse(null);
+    }
+
+    @SafeVarargs
+    private String extractAttributes(Bill entity, Function<Bill, String>... mappers) {
+        List<String> attributes = Arrays.stream(mappers)
+                .map(function -> function.apply(entity))
+                .collect(Collectors.toList());
+        return attributes.stream().anyMatch(s -> s == null || s.isEmpty()) ?
+                null : String.join("-", attributes);
+    }
+
+    record SomeClass(Bill bill) {
+    }
+
+    record Bill(String prefixString, String numberString) {
+    }
+
+    // flatMapping two dimensional arrays of various types
+
+    <T> Stream<T> flatMapTwoDimensionalArray(T[][] array) {
+        return Arrays.stream(array).flatMap(Arrays::stream);
+    }
+
+    Stream<Integer> flatMapTwoDimensionalArray(int[][] array) {
+        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
+    }
+
+    Stream<Double> flatMapTwoDimensionalArray(double[][] array) {
+        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
+    }
+
+    Stream<Long> flatMapTwoDimensionalArray(long[][] array) {
+        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
+    }
 }

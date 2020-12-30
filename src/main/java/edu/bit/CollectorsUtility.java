@@ -1,8 +1,7 @@
 package edu.bit;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -50,5 +49,65 @@ public class CollectorsUtility {
         }
 
         return Collector.of(Acc::new, Acc::accumulate, Acc::combine, Acc::applyMerger);
+    }
+
+
+    // implementation of a custom collector implemented below
+    record Offer(OfferType type, BigDecimal price) {
+    }
+
+    public enum OfferType {
+        STANDARD, BONUS
+    }
+
+    public static Collector<Offer, ?, List<Offer>> minCollector() {
+        class Acc {
+            private Offer min = null;
+            private List<Offer> result = new ArrayList<>();
+
+            private void add(Offer offer) {
+                if (offer.type() == OfferType.STANDARD) {
+                    if (min == null) {
+                        min = offer;
+                    } else {
+                        min = offer.price()
+                                .compareTo(min.price()) > 0 ? min : offer;
+                    }
+                } else {
+                    result.add(offer);
+                }
+            }
+
+            private Acc combine(Acc another) {
+                result.addAll(another.result);
+                return this;
+            }
+
+            private List<Offer> finisher() {
+                result.add(min);
+                return result;
+            }
+        }
+
+        return Collector.of(Acc::new, Acc::add, Acc::combine, Acc::finisher);
+    }
+
+    void findingMinimumOffer() {
+        List<Offer> offers = Arrays.asList(new Offer(OfferType.STANDARD, BigDecimal.valueOf(10.0)),
+                new Offer(OfferType.STANDARD, BigDecimal.valueOf(20.0)),
+                new Offer(OfferType.STANDARD, BigDecimal.valueOf(30.0)),
+                new Offer(OfferType.BONUS, BigDecimal.valueOf(5.0)),
+                new Offer(OfferType.BONUS, BigDecimal.valueOf(5.0)));
+
+        Comparator<Offer> compareLeastPrice = Comparator.comparing(Offer::price);
+
+        List<Offer> some = offers.stream()
+                .filter(x -> x.type() != OfferType.STANDARD)
+                .collect(Collectors.toList());
+
+        offers.stream()
+                .filter(x -> x.type() == OfferType.STANDARD)
+                .min(Comparator.comparing(Offer::price))
+                .ifPresent(some::add);
     }
 }

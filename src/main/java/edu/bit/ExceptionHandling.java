@@ -1,8 +1,10 @@
 package edu.bit;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-public class CustomExceptionHandling {
+public class ExceptionHandling {
 
     public void testException(String str) throws CustomException {
         if (str == null) {
@@ -26,6 +28,27 @@ public class CustomExceptionHandling {
             if (testException instanceof InterruptedException) {
                 System.out.println("Interrupted here...");
             }
+        }
+    }
+
+    //
+    public void closeableInTryWithResource() {
+        String soprano = null;
+
+        CloseIt closeIt = new CloseIt();
+        try (closeIt) {
+            System.out.println(soprano.matches(null));
+        } catch (Exception e) {
+            System.out.println("Exception!");
+        } catch (Throwable throwable) {
+            System.out.println("Throwable!");
+        }
+    }
+
+    static class CloseIt implements Closeable {
+        @Override
+        public void close() throws IOException {
+            System.out.println("Close..");
         }
     }
 }

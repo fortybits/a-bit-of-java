@@ -7,9 +7,9 @@ class ThrowCustomExceptionTest {
 
     @Test()
     void testExceptionBeingThrown() {
-        CustomExceptionHandling throwCustomException = new CustomExceptionHandling();
-        CustomExceptionHandling.CustomException customException = Assertions.assertThrows(
-                CustomExceptionHandling.CustomException.class, () -> throwCustomException.testException(null));
+        ExceptionHandling throwCustomException = new ExceptionHandling();
+        ExceptionHandling.CustomException customException = Assertions.assertThrows(
+                ExceptionHandling.CustomException.class, () -> throwCustomException.testException(null));
         customException.calledMethod(customException);
     }
 }

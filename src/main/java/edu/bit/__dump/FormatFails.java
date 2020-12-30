@@ -25,4 +25,13 @@ public class FormatFails {
         System.out.format("Bytes from expected: %s\n", Arrays.toString(obtained.getBytes()));
     }
 
+    public void formatNumberShort() {
+        NumberFormat fmt = NumberFormat.getCompactNumberInstance(Locale.US, NumberFormat.Style.SHORT);
+        System.out.println(fmt.format(1000));
+        System.out.println(fmt.format(100000));
+        System.out.println(fmt.format(10000000));
+        System.out.println(fmt.format(5501));
+        System.out.println(fmt.format(12034));
+    }
+
 }

@@ -7,8 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-public class DirectoriesHandling {
+public class FileHandling {
 
     private static void deleteFilesBasedOnPaths(List<Path> paths) {
         for (Path folderPath : paths) {
@@ -58,5 +60,16 @@ public class DirectoriesHandling {
         }
         Files.delete(dir.toPath());
         return true;
+    }
+
+
+    public void fileHandlingSampleWithStream() {
+        IntStream.range(0, 5).forEach(i -> createFile("", "test.txt"));
+        Stream.iterate("text.txt", x -> "test.txt")
+                .limit(5)
+                .forEach(x -> createFile("", x));
+    }
+
+    public static void createFile(String directoryPath, String fileName) {
     }
 }

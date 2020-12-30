@@ -1,7 +1,5 @@
 package edu.bit;
 
-import edu.bit.__dump.Invoice;
-
 import java.util.Objects;
 
 public class Inheritance {
@@ -83,6 +81,9 @@ public class Inheritance {
     }
 
     // default methods invoked from parent interfaces via their extensions
+    public class Invoice {
+    }
+
     public interface Another<T> {
 
         default T someMethod() {
@@ -159,6 +160,19 @@ public class Inheritance {
         seaPlane.turn();
         seaPlane.cruise();
         seaPlane.land(); // Method in class hierarchy rules
+    }
+
+    // interface implemented by enum
+    enum H implements G {
+        ONE, TWO;
+
+        @Override
+        public void s() {
+        }
+    }
+
+    interface G {
+        void s();
     }
 
 }

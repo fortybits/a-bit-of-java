@@ -187,4 +187,14 @@ public class Modularisation {
             };
         }
     }
+
+    // get a module name from the jar file programmatically
+    public static void extractModuleNameProgrammatically(Path dir1) {
+        ModuleFinder finder = ModuleFinder.of(dir1);
+        Set<ModuleReference> moduleReferences = finder.findAll();
+        Set<String> moduleNames = moduleReferences.stream()
+                .map(mr -> mr.descriptor().name())
+                .collect(Collectors.toSet());
+        System.out.println(moduleNames);
+    }
 }
