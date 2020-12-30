@@ -720,7 +720,7 @@ public class StreamsUtility {
 
 
     // use of predicate could simplify all these use cases into a common method
-    // the pattern is simplified further by using lambdas, this is covered in a video
+    // the strategy pattern is simplified further by using lambdas, this is covered in a video
     // at https://www.youtube.com/watch?v=WN9kgdSVhDo&t=982s&ab_channel=Devoxx
     int totalValues(List<Integer> numbers, Predicate<Integer> selector) {
         return numbers.stream()
