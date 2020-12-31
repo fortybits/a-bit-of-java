@@ -2,13 +2,19 @@ package edu.bit;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static java.lang.String.format;
 
 public class FileHandling {
 
@@ -71,5 +77,55 @@ public class FileHandling {
     }
 
     public static void createFile(String directoryPath, String fileName) {
+    }
+
+    //
+    public void readingZipFile(final Path zipFile) {
+        System.out.println("Reading zip-file: " + zipFile);
+        final URI uri = URI.create("zip:file:" + zipFile.toUri().getPath().replace(" ", "%20"));
+
+        try (final FileSystem fs = zipFile.getFileSystem().provider().newFileSystem(uri, Collections.singletonMap("create", "true"))) {
+            final long entriesRead = StreamSupport.stream(fs.getRootDirectories().spliterator(), false)
+                    .flatMap(root -> {
+                        try {
+                            return Files.walk(root);
+                        } catch (final IOException ex) {
+                            throw new RuntimeException(format(
+                                    "Error traversing zip file system '%s', root: '%s'.",
+                                    zipFile, root), ex);
+                        }
+                    }).mapToLong(file -> {
+                        try {
+                            Files.lines(file).forEachOrdered(System.out::println);
+                            return 1;
+                        } catch (final IOException ex) {
+                            throw new RuntimeException(format(
+                                    "Error modifying DAE-file '%s' in zip file system '%s'.",
+                                    file, zipFile), ex);
+                        }
+                    }).sum();
+
+            System.out.format("A total of %,d entries read.%n", entriesRead);
+
+        } catch (final IOException ex) {
+            throw new RuntimeException(format(
+                    "Error reading zip-file '%s'.", zipFile
+            ), ex);
+        }
+    }
+
+    private void redirectToFile() throws IOException, InterruptedException {
+        File outFile = new File("out.tmp");
+        Process p = new ProcessBuilder("ls", "-la")
+                .redirectOutput(outFile)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .start();
+        int status = p.waitFor();
+        if (status == 0) {
+            p = new ProcessBuilder("cat", outFile.toString())
+                    .inheritIO()
+                    .start();
+            p.waitFor();
+        }
     }
 }

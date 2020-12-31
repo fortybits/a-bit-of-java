@@ -2,10 +2,13 @@ package edu.bit;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CollectorsUtility {
 
@@ -110,4 +113,33 @@ public class CollectorsUtility {
                 .min(Comparator.comparing(Offer::price))
                 .ifPresent(some::add);
     }
+
+    static <T, U, A, R> Collector<T, ?, R> flatMapping(Function<? super T, ? extends Stream<? extends U>> mapper,
+                                                       Collector<? super U, A, R> downstream) {
+
+        BiConsumer<A, ? super U> acc = downstream.accumulator();
+        return Collector.of(downstream.supplier(),
+                (a, t) -> {
+                    try (Stream<? extends U> s = mapper.apply(t)) {
+                        if (s != null) {
+                            s.forEachOrdered(u -> acc.accept(a, u));
+                        }
+                    }
+                },
+                downstream.combiner(), downstream.finisher(),
+                downstream.characteristics().toArray(new Collector.Characteristics[0]));
+    }
+
+    public static <T, A, R> Collector<T, ?, R> filtering(
+            Predicate<? super T> predicate, Collector<? super T, A, R> downstream) {
+
+        BiConsumer<A, ? super T> accumulator = downstream.accumulator();
+        return Collector.of(downstream.supplier(),
+                (r, t) -> {
+                    if (predicate.test(t)) accumulator.accept(r, t);
+                },
+                downstream.combiner(), downstream.finisher(),
+                downstream.characteristics().toArray(new Collector.Characteristics[0]));
+    }
+
 }

@@ -1,6 +1,7 @@
 package edu.bit;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +26,22 @@ import java.util.stream.*;
 
 import static java.util.stream.Collectors.*;
 
+/**
+ * Note on parallel streams.
+ * The previous installment identified several factors that might cause a parallel execution to lose efficiency:
+ * <p>
+ * The source is expensive to split, or splits unevenly.
+ * Merging partial results is expensive.
+ * The problem doesn't admit sufficient exploitable parallelism.
+ * The layout of the data results in poor access locality.
+ * There's not enough data to overcome the startup costs of parallelism.
+ * </p>
+ * <p>
+ * Stream pipelines whose merge steps are O(n) - such as those using the sorted()
+ * or collect(Collectors.joining()) terminal operations
+ * - might see their parallelism limited by this effect.
+ * </p>
+ */
 public class StreamsUtility {
 
     public static void calculateAverageValuePerGroup() {
@@ -414,6 +432,8 @@ public class StreamsUtility {
      *     groupingBy(Employee::getDepartment,
      *                filtering(e -> e.getSalary() > 2000,
      *                          toSet())));
+     *
+     * also covered under https://stackoverflow.com/questions/48273090/how-to-apply-filtering-on-groupby-in-java-streams
      */
     private static Map<Department, Set<Employee>> filteringWhileGrouping(List<Employee> employees) {
         return employees.stream()
@@ -1165,8 +1185,8 @@ public class StreamsUtility {
     public static class InputStreamToStream {
 
         public Stream<byte[]> toStreamGenerate(final InputStream is, final int bufferSize) {
-    //        return Stream.of(is.readNBytes(bufferSize));
-    //        return Stream.of(is.readAllBytes());
+            //        return Stream.of(is.readNBytes(bufferSize));
+            //        return Stream.of(is.readAllBytes());
             return Stream.generate(() -> {
                 try {
                     return is.readNBytes(bufferSize);
@@ -1309,5 +1329,316 @@ public class StreamsUtility {
         Stream stream = StreamSupport.stream(spliterator, true);
         System.out.println(spliterator.characteristics()); // ORDERED
         System.out.println(stream.spliterator().characteristics()); // ORDERED
+    }
+
+    //
+    record Skills(String skills) {
+    }
+
+    record WorkExperience(int year, List<Skills> skill) {
+    }
+
+    public void flatMappingWithCollectorWhileReducing() {
+        List<Skills> skillSet1 = List.of(new Skills("Skill-1"), new Skills("Skill-2"), new Skills("Skill-3"));
+        List<Skills> skillSet2 = List.of(new Skills("Skill-1"), new Skills("Skill-4"), new Skills("Skill-2"));
+        List<Skills> skillSet3 = List.of(new Skills("Skill-1"), new Skills("Skill-9"), new Skills("Skill-2"));
+        List<WorkExperience> workExperienceList = List.of(new WorkExperience(2017, skillSet1),
+                new WorkExperience(2017, skillSet2), new WorkExperience(2018, skillSet3));
+
+        Map<Integer, Set<List<Skills>>> collectJ8 = workExperienceList.stream()
+                .collect(Collectors.groupingBy(WorkExperience::year,
+                        Collectors.mapping(WorkExperience::skill, Collectors.toSet())));
+        System.out.println(collectJ8);
+
+        Map<Integer, Set<Skills>> collectJ9 = workExperienceList.stream()
+                .collect(Collectors.groupingBy(WorkExperience::year,
+                        Collectors.flatMapping(workExp -> workExp.skill().stream(),
+                                Collectors.toSet())));
+        System.out.println(collectJ9);
+
+        Map<Integer, Set<Skills>> toMap = workExperienceList.stream()
+                .collect(Collectors.toMap(WorkExperience::year, we -> new HashSet<>(we.skill()),
+                        (s1, s2) -> {
+                            s1.addAll(s2);
+                            return s1;
+                        }));
+        System.out.println(toMap);
+
+        Map<Integer, Set<Skills>> optimizedMap = workExperienceList.stream()
+                .collect(Collectors.toMap(
+                        WorkExperience::year,
+                        we -> new HashSet<>(we.skill()),
+                        StreamsUtility::mergeSkills));
+        System.out.println(optimizedMap);
+    }
+
+    private static Set<Skills> mergeSkills(Set<Skills> s1, Set<Skills> s2) {
+        if (s1.size() > s2.size()) {
+            s1.addAll(s2);
+            return s1;
+        } else {
+            s2.addAll(s1);
+            return s2;
+        }
+    }
+
+    // this was asked at the following link
+    // https://stackoverflow.com/questions/58960735/why-does-iterating-a-mapped-sorted-stream-evaluate-more-elements-than-necessar
+    public static void mappedSortedStreamBehaviourOnTraversal() {
+        final List<Character> ALPHABET = List.of('a', 'b', 'c', 'd', 'e', 'f');
+        final int STOP_ORDINAL = 'b' - 'a';
+        Stream<Integer> ordinals = ALPHABET.stream()
+                .sorted()
+                .map(StreamsUtility::ordinal);
+
+        int count = 0;
+
+        Iterator<Integer> iterator = ordinals.iterator();
+        while (iterator.hasNext()) {
+            int ordinal = iterator.next();
+            if (ordinal > STOP_ORDINAL) {
+                System.out.println("stopping at " + ordinal);
+                break;
+            }
+            System.out.println("consuming " + ordinal);
+            ++count;
+        }
+
+        System.out.println("consumed " + count + " ordinals");
+    }
+
+    private static int ordinal(char letter) {
+        int ordinal = letter - 'a';
+        System.out.println("performing EXTREMELY EXPENSIVE mapping of " + letter + " -> " + ordinal);
+        return ordinal;
+    }
+
+    //
+    public void patternSplitAsStream() {
+        String starWars = "Luke Darthor Obimain QuiGoin Palpatine";
+        Function<String, Stream<String>> lineSplitter = l -> Pattern.compile(" ").splitAsStream(l);
+        Stream.of(starWars)
+                .flatMap(lineSplitter)
+                .sorted((Comparator.reverseOrder()))
+                .forEachOrdered(System.out::println);
+    }
+
+    // primitive iterators are rarely used in practice, but are efficient tool for iterating over int, long stream etc
+    public static boolean isValidJv8(String number) {
+        PrimitiveIterator.OfInt factor = IntStream.iterate(1, i -> 3 - i).iterator();
+        int sum = new StringBuilder(number).reverse()
+                .toString().chars()
+                .map(c -> c - '0')
+                .map(i -> i * factor.nextInt())
+                .reduce(0, (a, b) -> a + b / 10 + b % 10);
+        return (sum % 10) == 0;
+    }
+
+    public static boolean isValidJv9(long number) {
+        PrimitiveIterator.OfInt factor = IntStream.iterate(1, i -> 3 - i).iterator();
+        long sum = LongStream.iterate(number, n -> n > 0, n -> n / 10)
+                .map(n -> n % 10)
+                .map(i -> i * factor.nextInt())
+                .reduce(0, (a, b) -> a + b / 10 + b % 10);
+        return (sum % 10) == 0;
+    }
+
+    // peek is not invoked anymore based on the terminal operations
+    // the issue is discussed in details at https://stackoverflow.com/questions/48221783
+    public void peekNotInvokedWhileCountingTheStream() {
+        List<Integer> values = Arrays.asList(1, 2, 3);
+        values.stream()
+                .map(n -> n * 2)
+                .peek(System.out::print)
+                .count();
+    }
+
+    /**
+     * <p>
+     * Output ::
+     * Sample1
+     * Sample2
+     * Sample3
+     * Sample5
+     * <p>
+     * Expected ::
+     * Sample1
+     * Sample2
+     * Sample3
+     * this was discussed under https://stackoverflow.com/questions/47888814 and registered as bug at
+     * https://bugs.openjdk.java.net/browse/JDK-8193856
+     */
+    public static void incorrectTakeWhileBehaviourWithFlatMap() {
+        String[][] strArray = {{"Sample1", "Sample2"}, {"Sample3", "Sample4", "Sample5"}};
+
+        Arrays.stream(strArray)
+                .flatMap(Arrays::stream)
+                .takeWhile(ele -> !ele.equalsIgnoreCase("Sample4"))
+                .forEach(System.out::println);
+    }
+
+    // the utility is to derive a way to search words within comments
+    // the requirement was posed on https://stackoverflow.com/questions/60443274/
+    void searchWordsInComments(List<String> elements, List<String> listOfComments) {
+        Set<String> lowerCaseSet = elements.stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        Map<String, Long> output = listOfComments.stream()
+                .flatMap(e -> Arrays.stream(e.replace(".", "")
+                        .split(" "))
+                        .map(String::toLowerCase))
+                .filter(lowerCaseSet::contains)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry<String, Long>::getValue).reversed().thenComparing(Map.Entry::getKey))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+
+        System.out.println(output);
+
+        Function<String, Map.Entry<String, Long>> function = f -> Map.entry(f, listOfComments.stream()
+                .filter(e -> e.toLowerCase().contains(f.toLowerCase())).count());
+
+        elements.stream()
+                .map(function)
+                .sorted(Comparator.comparing(Map.Entry<String, Long>::getValue)
+                        .reversed().thenComparing(Map.Entry::getKey))
+                .forEach(System.out::println);
+    }
+
+    void searchWordsInCommentsByHolger(List<String> elements, List<String> listOfComments) {
+        Map<String, Predicate<String>> filters = elements.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .map(s -> Pattern.compile(s, Pattern.LITERAL | Pattern.CASE_INSENSITIVE))
+                .collect(Collectors.toMap(Pattern::pattern, Pattern::asPredicate,
+                        (a, b) -> {
+                            throw new AssertionError("duplicates");
+                        }, LinkedHashMap::new));
+
+        filters.entrySet().stream()
+                .map(e -> Map.entry(e.getKey(), listOfComments.stream().filter(e.getValue()).count()))
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEachOrdered(e -> System.out.printf("%-7s%3d%n", e.getKey(), e.getValue()));
+    }
+
+    // generic approach to solving similar aggregate operations on various fields
+    private Nutrients nutrientsCalculator(List<FoodNutritional> responseBody) {
+        Supplier<Stream<FoodNutritional>> foodNutritionalSupplier = responseBody::stream;
+        return Nutrients.builder()
+                .carbohydrates(sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalCarbohydrate))
+                .protein(sumNutrition(foodNutritionalSupplier, FoodNutritional::getProtein))
+                .fat(sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalFat))
+                .dietaryFiber(sumNutrition(foodNutritionalSupplier, FoodNutritional::getDietaryFiber))
+                .build();
+    }
+
+    private Double sumNutrition(Supplier<Stream<FoodNutritional>> foodNutritionalSupplier,
+                                ToDoubleFunction<FoodNutritional> nutritionTypeFunction) {
+        return foodNutritionalSupplier.get().mapToDouble(nutritionTypeFunction).sum();
+    }
+
+    @Builder
+    static class Nutrients {
+        private final Double carbohydrates;
+        private final Double protein;
+        private final Double fat;
+        private final Double dietaryFiber;
+    }
+
+    @Getter
+    static class FoodNutritional {
+        private Double totalFat;
+        private Double totalCarbohydrate;
+        private Double dietaryFiber;
+        private Double protein;
+    }
+
+
+    //
+    Integer[] sortArrayWithEvensIntact(Integer[] array) {
+        Map<Boolean, Map<Integer, Integer>> evenOdds = IntStream.range(0, array.length)
+                .boxed()
+                .collect(Collectors.partitioningBy(i -> array[i] % 2 == 0,
+                        Collectors.toMap(o -> o, i -> array[i])));
+
+        Map<Integer, Integer> oddSorted = remapWithSorting(evenOdds.get(Boolean.FALSE));
+
+        Map<Integer, Integer> overall = new HashMap<>(evenOdds.get(Boolean.TRUE));
+        overall.putAll(oddSorted);
+
+        return overall.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toArray(Integer[]::new);
+    }
+
+    Map<Integer, Integer> remapWithSorting(Map<Integer, Integer> initialIndexMapping) {
+        List<Integer> oddIndexes = new ArrayList<>(initialIndexMapping.keySet());
+        List<Integer> sortedOdds = initialIndexMapping.values().stream()
+                .sorted().collect(Collectors.toList());
+        return IntStream.range(0, sortedOdds.size())
+                .boxed()
+                .collect(Collectors.toMap(oddIndexes::get, sortedOdds::get));
+    }
+
+    //
+    static List<Predicate<Object>> predicates = List.of(
+            obj -> instanceOfAny(obj, Set.of(Integer.class, Long.class, String.class, Boolean.class)),
+            obj -> instanceOfAny(obj, Set.of(Map.class)));
+
+    static boolean instanceOfAny(Object obj, Set<Class<?>> set) {
+        return set.stream().anyMatch(clazz -> clazz.isInstance(obj));
+    }
+
+    static int grouper(Object obj) {
+        return IntStream.range(0, predicates.size())
+                .filter(i -> predicates.get(i).test(obj))
+                .findFirst()
+                .orElse(predicates.size());
+    }
+
+    public void splitMultipleTypeSubLists() {
+        List<Object> input = List.of(true, 1, 2L, "asdf", Map.of("a", "b"),
+                BigInteger.valueOf(23456), Map.of(3, 4), List.of("x", "y", "z"), false, 17, 'q');
+
+        Map<Integer, List<Object>> result =
+                input.stream().collect(Collectors.groupingBy(StreamsUtility::grouper));
+
+        result.forEach((k, v) -> System.out.println(k + " => " + v));
+    }
+
+    /*
+     *  Some sources admit better implementations than others:
+     *  an ArrayList with more than one element can always be split cleanly and evenly;
+     *  a LinkedList always splits poorly;
+     *  and hash-based and tree-based sets can generally be split reasonably well
+     */
+    public static void tryOutTreeSet(String[] args) {
+        TreeSet<String> ts = new TreeSet<>(Set.of("", "s"));
+        String[] sortedAWords = ts.stream()
+                .filter(s -> s.startsWith("a"))
+                .sorted() // no-op
+                .toArray(String[]::new);
+    }
+
+    /*
+     * The easiest way to make a spliterator, but which results in the worst-quality result,
+     * is to pass an Iterator to Spliterators.spliteratorUnknownSize().
+     * You can obtain a slightly better spliterator by passing an Iterator and a size to Spliterators.spliterator.
+     * But if stream performance is important - especially, parallel performance -
+     * implement the full Spliterator interface, including all applicable characteristics.
+     */
+
+    //
+    void spliteratorBehaviourToCloseStreams(){
+        Stream<String> stream = Stream.of("a", "b", "c");
+        Spliterator<String> spliterator = stream.spliterator();
+        // Some low lever operation with the spliterator
+        stream.close(); // do we need to close?
+
+        Stream<String> stream2 = Stream.of("a", "b", "c").limit(2);
+        Spliterator<String> spliterator2 = stream2.spliterator();
+        stream.close();
+        // Some low lever operation with the spliterator
     }
 }

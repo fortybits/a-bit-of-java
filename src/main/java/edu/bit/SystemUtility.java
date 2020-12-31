@@ -4,17 +4,27 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.VarHandle;
+import java.lang.management.ManagementFactory;
+import java.time.Duration;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SystemUtility {
 
     public void verifyJavaRuntimeVersion() {
+        System.out.println("java.runtime.version = " + System.getProperty("java.runtime.version"));
         System.out.println(Runtime.version());
         Runtime.Version version = Runtime.Version.parse("9");
         version = Runtime.Version.parse("9.0.1");
@@ -166,5 +176,132 @@ public class SystemUtility {
                     }
                 }
         );
+    }
+
+    //
+    public void executeProcesses() throws IOException {
+        Process process = new ProcessBuilder(List.of("ping", "-i", "1", "-c", "5", "google.com")).inheritIO().start();
+        ProcessHandle processHandle = process.toHandle();
+        System.out.println(processHandle + " - " + processHandle.info());
+
+        CompletableFuture<ProcessHandle> onExitFuture = processHandle.onExit();
+        CompletableFuture<ProcessHandle.Info> infoCompletableFuture = onExitFuture.thenApply(ProcessHandle::info);
+        CompletableFuture<Optional<Duration>> optionalCompletableFuture =
+                infoCompletableFuture.thenApply(ProcessHandle.Info::totalCpuDuration);
+        CompletableFuture<Void> accept = optionalCompletableFuture.thenAccept(System.out::println);
+        System.in.read();
+    }
+
+    //
+    private void getProcessInfo() throws IOException {
+        ProcessBuilder pb = new ProcessBuilder("echo", "Hello World!");
+        Process p = pb.start();
+        ProcessHandle.Info info = p.info();
+        System.out.printf("Process ID: %s%n", p.pid());
+        String na = "<not available>";
+        System.out.printf("Command name: %s%n", info.command().orElse(na));
+        System.out.printf("Command line: %s%n", info.commandLine().orElse(na));
+
+        System.out.printf("Start time: %s%n",
+                info.startInstant().map(i -> i.atZone(ZoneId.systemDefault())
+                        .toLocalDateTime().toString())
+                        .orElse(na));
+
+        System.out.printf("Arguments: %s%n",
+                info.arguments().map(a -> String.join(" ", a))
+                        .orElse(na));
+
+        System.out.printf("User: %s%n", info.user().orElse(na));
+    }
+
+    //
+    public static void killProcess() {
+        Stream<ProcessHandle> currentProcess = ProcessHandle.allProcesses();
+        currentProcess.parallel().forEach(processHandle -> {
+            System.out.println(processHandle.pid());
+            processHandle.destroy();
+        });
+        System.out.println("current process id:" + currentProcess.toString());
+        System.out.println("current process id:" + ManagementFactory.getRuntimeMXBean().getName());
+
+        long pid = Long.MAX_VALUE;
+        Optional<ProcessHandle> processHandle = ProcessHandle.of(pid);
+        if (processHandle.isPresent()) {
+            ProcessHandle.Info processInfo = processHandle.get().info();
+            System.out.println("Process arguments: " + Arrays.toString(processInfo.arguments().orElse(new String[0])));
+            System.out.println("Process executable: " + processInfo.command().orElse(""));
+            System.out.println("Process command line: " + processInfo.commandLine().orElse(""));
+            System.out.println("Process start time: " + processInfo.startInstant().orElse(null));
+            System.out.println("Process total cputime accumulated: " + processInfo.totalCpuDuration().orElse(null));
+            System.out.println("Process user: " + processInfo.user().orElse(""));
+        }
+    }
+
+    //
+    public int publicTestVariable = 10;
+
+    public void varHandleSample() throws NoSuchFieldException, IllegalAccessException {
+        SystemUtility e = new SystemUtility();
+        System.out.println(e.publicTestVariable);
+        e.update();
+        System.out.println(e.publicTestVariable);
+    }
+
+    private void update() throws NoSuchFieldException, IllegalAccessException {
+        VarHandle publicIntHandle = MethodHandles.lookup().in(String.class)
+                .findVarHandle(SystemUtility.class, "publicTestVariable", int.class);
+        publicIntHandle.compareAndSet(this, 10, 100); // CAS
+    }
+
+    //
+    public void varHandleDetailedExperiment() throws Throwable {
+        //        such lookup to obtain a VarHandle for a field named i of type int on a receiver class Foo might be performed as follows:
+        VarHandle fieldHandle = MethodHandles.lookup().
+                in(Basics.Question.class).
+                findVarHandle(Basics.Question.class, "votes", int.class);
+
+
+        //        a VarHandle to an array of int may be created as follows:
+        VarHandle intArrayHandle = MethodHandles.arrayElementVarHandle(int[].class);
+
+
+        //        a VarHandle to view an array of byte as an unaligned array of long may be created as follows:
+        VarHandle longArrayViewHandle = MethodHandles.byteArrayViewVarHandle(
+                long[].class, java.nio.ByteOrder.BIG_ENDIAN);
+
+        //        to produce a MethodHandle to the "compareAndSet" access mode for a particular variable kind and type:
+        Basics.Question q = new Basics.Question();
+        MethodHandle mhToVhCompareAndSet = MethodHandles.publicLookup().findVirtual(
+                VarHandle.class,
+                "compareAndSet",
+                MethodType.methodType(boolean.class, Basics.Question.class, int.class, int.class));
+
+        //        The MethodHandle can then be invoked with a variable kind and type compatible VarHandle instance as the first parameter:
+        boolean r = (boolean) mhToVhCompareAndSet.invokeExact(fieldHandle, q, 0, 1);
+
+
+        //        Such a MethodHandle lookup using findVirtual will perform an asType transformation to adjust arguments and return values.
+        MethodHandle mhToVhCompareAndSet2 = MethodHandles.varHandleExactInvoker(
+                VarHandle.AccessMode.COMPARE_AND_SET,
+                MethodType.methodType(boolean.class, Basics.Question.class, int.class, int.class));
+
+        boolean r1 = (boolean) mhToVhCompareAndSet2.invokeExact(fieldHandle, q, 0, 1);
+    }
+
+    // var handling the global variable within a class
+    static class Point {
+
+        private static final VarHandle X;
+
+        static {
+            try {
+                X = MethodHandles.lookup().findVarHandle(Point.class, "x", int.class);
+                System.out.println(X.getVolatile(new Point()));
+            } catch (ReflectiveOperationException e) {
+                throw new Error(e);
+            }
+        }
+
+        volatile int x, y;
     }
 }

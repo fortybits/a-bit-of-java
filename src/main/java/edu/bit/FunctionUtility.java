@@ -1,10 +1,8 @@
 package edu.bit;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.net.UnknownHostException;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.*;
 import java.util.stream.Collectors;
@@ -264,4 +262,156 @@ public class FunctionUtility {
         //    The content of
         //    the string
     }
+
+    // this in particular is a design use case to make the conversion to list as generic as possible
+    // https://stackoverflow.com/questions/58782150/removing-overloaded-method-in-java
+    public static class OverloadUsingUnaryOperator {
+
+        public static <T, G> List<G> toListOfNewType(
+                List<T> inputList, Function<T, G> mapperFunction, Comparator<? super G> comparator) {
+            return toListOfNewTypeImpl(inputList, mapperFunction, s -> s.sorted(comparator));
+        }
+
+        public static <T, G> List<G> toListOfNewType(List<T> inputList, Function<T, G> mapperFunction) {
+            return toListOfNewTypeImpl(inputList, mapperFunction, UnaryOperator.identity());
+        }
+
+        private static <T, G> List<G> toListOfNewTypeImpl(
+                List<T> inputList, Function<T, G> mapperFunction, UnaryOperator<Stream<G>> lastOp) {
+            return lastOp.apply(inputList.stream().map(mapperFunction)).collect(Collectors.toList());
+        }
+
+
+        public static <T, G> List<G> toListOfNewTypeIdentityComparator(
+                List<T> inputList, Function<T, G> mapperFunction) {
+            return toListOfNewType(inputList, mapperFunction, (a, b) -> 0);
+        }
+    }
+
+    /**
+     * discussed in https://stackoverflow.com/questions/48227496
+     * error: reference to ok is ambiguous
+     * return ok(() -> System.out.append("aaa"));
+     * ^
+     * both method <T#1>ok(Supplier<T#1>) in Q48227496 and method <T#2>ok(Procedure) in Q48227496 match
+     * where T#1,T#2 are type-variables:
+     * T#1 extends Object declared in method <T#1>ok(Supplier<T#1>)
+     * T#2 extends Object declared in method <T#2>ok(Procedure)
+     * <p>
+     * registered as a bug https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8195598
+     */
+    public A<?> ambiguousReferencesInJava9() {
+        return ok(() -> System.out.append("aaa")); // fixed in Java11 and above
+    }
+
+    private <T> A<T> ok(java.util.function.Supplier<T> action) {
+        return new A<>();
+    }
+
+    public <T> A<T> ok(T body) {
+        return new A<>();
+    }
+
+    private <T> A<T> ok(Procedure action) {
+        return new A<>();
+    }
+
+    public <T> A<T> ok() {
+        return new A<>();
+    }
+
+    @FunctionalInterface
+    public interface Procedure {
+        void invoke();
+    }
+
+    private class A<T> {
+    }
+
+    /**
+     * the compiler issued an error in the following code:
+     * incompatible types: inference variable R has incompatible bounds
+     * https://stackoverflow.com/questions/47260727
+     * http://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8191290
+     */
+    public void incompatibleTypesIssueWithJava9() throws UnknownHostException {
+        call(() -> myMethod("hello")); //compile error in jdk9
+    }
+
+
+    private static <R> R call(Closure<R> closure) {
+        return closure.apply();
+    }
+
+    private static void call(VoidClosure closure) throws UnknownHostException {
+        call(() -> {
+            closure.apply();
+            return null;
+        });
+    }
+
+    private static <T> void myMethod(Object data) {
+        System.out.println(data);
+    }
+
+    @FunctionalInterface
+    public interface Closure<R> {
+        R apply();
+    }
+
+    @FunctionalInterface
+    public interface VoidClosure {
+        void apply();
+    }
+
+    // what all methods can functional interface still override
+    @FunctionalInterface
+    public interface Sayable {
+        void say(String msg); //abstract method
+
+        //It can contain any number of Object class methods.
+        int hashCode();
+
+        String toString();
+
+        boolean equals(Object obj);
+    }
+
+    //
+    public void referenceVariableCaptured() {
+        Thread t = Thread.currentThread();
+        Runnable run = new Runnable() {
+            @Override
+            public void run() {
+                Thread.yield();
+            }
+        };
+        Runnable run2 = Thread::yield;
+        run.run();
+        run2.run();
+    }
+
+    //
+    @FunctionalInterface
+    public interface NAryFunction<T, R> {
+        R apply(T... t);
+    }
+
+    //
+    static class ImpFunctInterface {
+        public static void main(String[] args) {
+            new ImpFunctInterface().foo(System.out::println);
+        }
+
+        void foo(FunctionalInterface f) {
+            ImpFunctInterface a = new ImpFunctInterface();
+            f.activate(a);
+        }
+
+        private interface FunctionalInterface {
+            void activate(ImpFunctInterface a);
+        }
+    }
+
+
 }

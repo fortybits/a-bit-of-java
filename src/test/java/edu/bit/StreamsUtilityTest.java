@@ -3,6 +3,7 @@ package edu.bit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,5 +42,26 @@ class StreamsUtilityTest {
                 new StreamsUtility.Coordinate("7", "11"));
         StreamsUtility streamsUtility = new StreamsUtility();
         streamsUtility.groupingAndFilteringToCount(myList);
+    }
+
+    @Test
+    void testSearchWordsInComments() {
+        StreamsUtility streamsUtility = new StreamsUtility();
+        streamsUtility.searchWordsInComments(Arrays.asList("Oranges", "Figs", "Mangoes", "Apples"),
+                Arrays.asList("Apples are better than Oranges", "I love Mangoes and Oranges",
+                        "I don't know like Figs. Mangoes are my favorites", "I love Mangoes and Apples"));
+
+        streamsUtility.searchWordsInComments(Arrays.asList("Oranges", "Figs", "Mangoes", "Apples"),
+                Arrays.asList("Apples are better than Oranges", "I love Mangoes and Oranges",
+                        "I don't know like Figs. Mangoes are my favorites", "I love Mangoes and Apples"));
+    }
+
+    @Test
+    void testSortingArrayWithEvenValuesIntact() {
+        StreamsUtility streamsUtility = new StreamsUtility();
+        Integer[] input = new Integer[]{3, 4, 5, 2, 1, 6, 9, 8, 7, 0};
+        Integer[] res = new Integer[]{1, 4, 3, 2, 5, 6, 7, 8, 9, 0};
+        Integer[] out = streamsUtility.sortArrayWithEvensIntact(input);
+        Assertions.assertArrayEquals(out, res);
     }
 }

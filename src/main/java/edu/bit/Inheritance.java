@@ -393,4 +393,42 @@ public class Inheritance {
             System.out.println("Luke's attack.");
         }
     }
+
+    // in JLS 6.6-5: "[A private class member] is not inherited by subclasses".
+    // discussed in details over https://stackoverflow.com/questions/48215297/method-reference-to-private-interface-method
+    // https://bugs.openjdk.java.net/browse/JDK-8194998 and also relates to
+    // https://stackoverflow.com/questions/48215194/compiler-message-file-broken-i-guess-a-java-compiler-bug
+    public void privateClassMemberInheritance() {
+        Runnable test = ((I) (new I() {
+        }))::test;  // compiles OK
+
+        // this won't compile in Java 9 and the message is broken as well,
+        // with java 11, the error message is fixed, but the behaviour persists
+//        Runnable test2 = ((new I() {}))::test;
+    }
+
+    interface I {
+        private void test() {
+        }
+    }
+
+    // the following code with Java9 resulted in
+    // Exception in thread "main" java.lang.NoSuchFieldError: super
+    // this was admitted as a bug and is now fixed with Java-11 and above
+    // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8194847
+    public void noSuchFieldErrorForSuper() {
+        new C().test();
+    }
+
+    interface B {
+        private void test() {
+        }
+    }
+
+    static class C implements B {
+        void test() {
+            B.super.test();
+        }
+    }
+
 }
