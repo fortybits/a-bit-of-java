@@ -1641,4 +1641,86 @@ public class StreamsUtility {
         stream.close();
         // Some low lever operation with the spliterator
     }
+
+
+    private static int solutionToCutShortTheNumber(int num) {
+        return (int) IntStream.iterate(num, i -> i > 0, i -> i % 2 == 0 ? i / 2 : i - 1).count();
+    }
+
+    private static IntStream listToIntStream(List<Integer> list) {
+        return list.stream().flatMapToInt(IntStream::of);
+    }
+
+    private static void reverseSortAPrimitiveArray(int[] arr2) {
+        // careful about boundary values
+        int[] sortedArray = Arrays.stream(arr2)
+                .map(i -> -i).sorted().map(i -> -i) // just use 'sorted()' for ascending order
+                .toArray();
+        // safer way to sort
+        int[] safeSortedArray = Arrays.stream(arr2)
+                .boxed()
+                .sorted(Comparator.reverseOrder()) // use 'naturalOrder' for ascending order
+                .mapToInt(Integer::intValue)
+                .toArray();
+        Arrays.sort(arr2);
+    }
+
+    private IntStream reverseSort(int from, int to) {
+        return IntStream.range(from, to)
+                .filter(x -> x % 2 != 0)
+                .sorted().map(i -> to - i + from - 1);
+    }
+
+    private boolean isPrimeJava9(int n) {
+        return IntStream.iterate(2, i -> i * i <= n, i -> i + 1)
+                .noneMatch(i -> n % i == 0);
+    }
+
+    // complete reduction explained with the sample below
+    public static class StringConcatenationUsingReduction {
+
+        /**
+         * Perhaps surprisingly, need not be commutative, though many operators commonly used for reduction,
+         * such as as plus and max, are. An example of a binary operator that's associative but not commutative
+         * is string concatenation.
+         */
+        public static void main(String[] args) {
+            List<String> strings = List.of("An", "example", "of", "a", "binary", "operator");
+            // this will have O(n^2) runtime
+            System.out.println(strings.stream().reduce(" ", String::concat));
+            // this will have O(n) runtime
+            System.out.println(strings.stream().collect(() -> new StringBuilder(" "), StringBuilder::append,
+                    StringBuilder::append).toString());
+
+
+            /*
+             * If the provided binary operator isn't associative, or the provided identity value isn't actually an identity
+             * for the binary operator, then when the operation is executed in parallel,
+             * the result might be incorrect, and different executions on the same data set might produce different results.
+             */
+            System.out.println(strings.stream().parallel().reduce(" ", String::concat));
+
+
+            /*
+             * The key difference is that, with the forEach() version, multiple threads are trying to access
+             * a single result container simultaneously, whereas with parallel collect(),
+             * each thread has its own local result container, the results of which are merged afterward.
+             */
+            System.out.println(strings.stream().collect(() -> new StringBuilder(" "), StringBuilder::append,
+                    StringBuilder::append).toString());
+
+            /*
+             * Analogous operation for reduction in parallel
+             */
+            System.out.println(strings.stream().parallel().collect(joining(" ")));
+
+            List<String> identityCheck = List.of("An", "example", "of", "a", "identity", "element");
+            System.out.println(identityCheck.stream().reduce(" ", String::concat));
+            System.out.println(identityCheck.stream().parallel().reduce(" ", String::concat));
+
+    //        List<String> strings = List.of("An", "example", "of", "a", "binary", "operator");
+            System.out.println(strings.stream().reduce("", (s, str) -> String.valueOf(s.equals(str))));
+            System.out.println(strings.stream().parallel().reduce("", (s, str) -> String.valueOf(s.equals(str))));
+        }
+    }
 }

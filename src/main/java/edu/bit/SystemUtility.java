@@ -4,21 +4,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.invoke.VarHandle;
+import java.lang.invoke.*;
 import java.lang.management.ManagementFactory;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class SystemUtility {
@@ -303,5 +299,84 @@ public class SystemUtility {
         }
 
         volatile int x, y;
+    }
+
+    // compact strings was specifically a feature/implementation with Java-9 as
+    // and when the string representation had changed
+    public static class CompactStrings {
+
+        String field;
+
+        public static void main(String[] args) {
+            overviewCompactString();
+            concatFactory();
+            testStringCompaction();
+        }
+
+        private static void concatFactory() {
+            try {
+                StringConcatFactory.makeConcat(MethodHandles.lookup(), "abc", MethodType.methodType(String.class));
+                //            StringConcatFactory.makeConcat(MethodHandles.publicLookup(), "abc", MethodType.methodType(String.class)); // throws a StringConcatException
+            } catch (StringConcatException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private static void testStringCompaction() {
+            String java9 = "MAJOR.MINOR";
+            StackWalker stackWalker = StackWalker.getInstance(Set.of(StackWalker.Option.RETAIN_CLASS_REFERENCE));
+            stackWalker.getCallerClass();
+            System.out.println(Arrays.toString(stackWalker.getCallerClass().getDeclaredFields()));
+        }
+
+        public static void overviewCompactString() {
+            long startTime = System.currentTimeMillis();
+            List strings = IntStream.rangeClosed(1, 10000000).mapToObj(Integer::toString).collect(Collectors.toList());
+            long totaltime = System.currentTimeMillis() - startTime;
+
+            System.out.println("Generated String " + strings.size() + " strings in " + totaltime + " ms.");
+
+
+            startTime = System.currentTimeMillis();
+            String appended = (String) strings.stream().limit(100000).reduce("", (l, r) -> l.toString() + r.toString());
+
+            totaltime = System.currentTimeMillis() - startTime;
+
+
+            System.out.println("Created String of length " + appended.length() + " in " + totaltime + " ms.");
+        }
+
+        public void stringConcatenationInJava9() throws NoSuchMethodException, IllegalAccessException {
+            MethodHandle concatHandle = MethodHandles.publicLookup()
+                    .findVirtual(String.class, "concat", MethodType.methodType(String.class, String.class));
+            concatHandle = concatHandle.bindTo("Hello, ");
+        }
+    }
+
+    public void currencyFormatter() {
+        Currency currency = Currency.getInstance("EUR");
+        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.FRANCE);
+        currencyFormatter.setMaximumFractionDigits(0);
+        currencyFormatter.setMinimumFractionDigits(0);
+        currencyFormatter.setCurrency(currency);
+
+        String expected = "123 457 €";
+        String obtained = currencyFormatter.format(123456.789);
+        System.out.println(expected.equals(obtained));
+        System.out.println(expected);
+        System.out.println(obtained);
+        System.out.println(expected.equals(obtained));
+
+        System.out.format("Bytes from expected: %s\n", Arrays.toString(expected.getBytes()));
+        System.out.format("Bytes from expected: %s\n", Arrays.toString(obtained.getBytes()));
+    }
+
+    public void formatNumberShort() {
+        NumberFormat fmt = NumberFormat.getCompactNumberInstance(Locale.US, NumberFormat.Style.SHORT);
+        System.out.println(fmt.format(1000));
+        System.out.println(fmt.format(100000));
+        System.out.println(fmt.format(10000000));
+        System.out.println(fmt.format(5501));
+        System.out.println(fmt.format(12034));
     }
 }

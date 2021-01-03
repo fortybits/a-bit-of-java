@@ -1,11 +1,11 @@
 package edu.bit;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -142,4 +142,86 @@ public class CollectorsUtility {
                 downstream.characteristics().toArray(new Collector.Characteristics[0]));
     }
 
+    //
+    public void reduceUsingCustomCollector() {
+        List<List<Integer>> result = Stream.of(1, 2, 3, 4, 2, 8)
+                .collect(Collector.of(
+                        ArrayList::new,
+                        (list, elem) -> {
+                            if (list.isEmpty()) {
+                                List<Integer> inner = new ArrayList<>();
+                                inner.add(elem);
+                                list.add(inner);
+                            } else {
+                                if (elem == 2) {
+                                    list.add(new ArrayList<>());
+                                } else {
+                                    List<Integer> last = list.get(list.size() - 1);
+                                    last.add(elem);
+                                }
+                            }
+                        },
+                        (left, right) -> {
+                            // This is the real question here:
+                            // can left or right be empty here?
+                            return left;
+                        }));
+    }
+
+    // the requirement as posed on the community was to find an equivalent of 'having' command in collectors
+    // https://stackoverflow.com/questions/61396147/
+    public static class SQLHavingCollector {
+
+        private static void solve(List<Item> input) {
+            Map<String, List<Item>> initial = input.stream()
+                    .collect(Collectors.groupingBy(Item::getId))
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> entry.getValue().size() > 5)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            Map<String, List<Item>> andThen = input.stream()
+                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::getId),
+                            map -> map.entrySet().stream()
+                                    .filter(e -> e.getValue().size() > 5)
+                                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
+
+            Map<String, Long> sqlCount = input.stream()
+                    .collect(Collectors.groupingBy(Item::getId, Collectors.counting()));
+            Map<String, List<Item>> sqlGroupHavingCount = input.stream().filter(i -> sqlCount.get(i.getId()) > 5)
+                    .collect(Collectors.groupingBy(Item::getId));
+
+        }
+
+        private static void main(String... args) {
+            List<Item> input = new ArrayList<>();
+            Map<String, List<Item>> andThenAgain = input.stream()
+                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::getId,
+                            HashMap::new, Collectors.toList()),
+                            m -> {
+                                m.values().removeIf(l -> l.size() <= 5);
+                                return m;
+                            }));
+
+            Map<String, List<Item>> result = input.stream()
+                    .collect(having(Collectors.groupingBy(Item::getId), (key, list) -> list.size() > 5));
+
+        }
+
+        public static <T, K, V> Collector<T, ?, Map<K, V>> having(
+                Collector<T, ?, ? extends Map<K, V>> c, BiPredicate<K, V> p) {
+            return Collectors.collectingAndThen(c, in -> {
+                Map<K, V> m = in;
+                if (!(m instanceof HashMap)) m = new HashMap<>(m);
+                m.entrySet().removeIf(e -> !p.test(e.getKey(), e.getValue()));
+                return m;
+            });
+        }
+
+        @Getter
+        @AllArgsConstructor
+        static class Item {
+            String id;
+        }
+    }
 }
