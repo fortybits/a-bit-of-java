@@ -10,6 +10,4 @@ module a.bit.of.java {
     requires jdk.jlink;
 
     requires lombok;
-
-    exports edu.bit to jdk.internal.ed;
 }
