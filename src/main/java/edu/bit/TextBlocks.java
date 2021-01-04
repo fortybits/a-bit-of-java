@@ -1,47 +1,42 @@
 package edu.bit;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.IOException;
 
-// TODO : intelliJ Update for Raw Strings
-public class RawStrings {
+public class TextBlocks {
 
-    public static void filePathRawStrings() throws IOException {
+    public void filePathTextBlock() throws IOException {
         // Before JEP-326
         Runtime.getRuntime().exec("\"C:\\Program Files\\foo\" bar");
         // After JEP-326
-//        Runtime.getRuntime().exec(```"C:\\Program Files\\foo\\bar"```);
+        Runtime.getRuntime().exec("""
+                "C:\\Program Files\\foo\\bar"
+                """);
     }
 
-    public static void polyglotRawStrings() {
+    public void polyglotTextBlock() throws ScriptException {
+        ScriptEngine engine = new ScriptEngineManager().getEngineByName("js");
         // Before JEP-326
         String script = "function hello() {\n" +
                 "   print(\'\"Hello World\"\');\n" +
                 "}\n" +
                 "\n" +
                 "hello();\n";
-//        ScriptEngine engine = new ScriptEngineManager().getEngineByName("js");
-//        Object obj = engine.eval(script);
-
 
         // After JEP-326
-//        String scriptNow = `function hello() {
-//                    print('"Hello World"');
-//                 }
-//
-//                 hello();
-//                `;
-//        ScriptEngine engine = new ScriptEngineManager().getEngineByName("js");
-//        Object obj = engine.eval(script);
+        String scripts = """
+                function hello() {
+                    print('"Hello, world"');
+                }
+                                         
+                hello();
+                """;
+        Object obj = engine.eval(script);
     }
 
-    public static void regexRawStrings() {
-        // Before JEP-326
-        System.out.println("this".matches("\\w\\w\\w\\w"));
-        // After JEP-326
-//        System.out.println("this".matches(`\w\w\w\w`));
-    }
-
-    public static void traditionalRawStrings() {
+    public void traditionalTextBlock() {
         // Before JEP-326
         String html = "<html>\n" +
                 "    <body>\n" +
@@ -50,15 +45,16 @@ public class RawStrings {
                 "</html>\n";
 
         // After JEP-326
-//        String htmlnow = ```<html>
-//                   <body>
-//                       <p>Hello World.</p>
-//                   </body>
-//               </html>
-//              `;
+        String htmlNow = """
+                <html>
+                    <body>
+                        <p>Hello, world</p>
+                    </body>
+                </html>
+                """;
     }
 
-    public void indentRawStrings() {
+    public void indentTextBlocks() {
         String embeddedString = """
                           <html>
                           <body>
