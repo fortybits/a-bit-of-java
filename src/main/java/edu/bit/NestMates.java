@@ -62,6 +62,5 @@ public class NestMates {
         public static class NestTwo {
             private int varNest2;
         }
-
     }
 }

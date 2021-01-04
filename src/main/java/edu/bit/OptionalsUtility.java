@@ -2,7 +2,6 @@ package edu.bit;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Comparator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -14,18 +13,13 @@ import java.util.stream.Stream;
 public class OptionalsUtility {
 
     public static void main(String[] args) {
-        OptionalInt i = IntStream.rangeClosed(1, 5)
+        OptionalInt i = IntStream.rangeClosed(1, 9)
                 .reduce((first, second) -> first == 7 ? first : second);
         System.out.print(i.getAsInt());
 
-        // Find maxProductOfNonOverlappingPalindromes from a stream of integer
-        Stream<Integer> integerStream = Stream.of(1, 2);
-        Optional<Integer> maxCompare = integerStream.max(Comparator.comparingInt(a -> a));
-//        final Optional<Integer> maxCompareTo = integerStream.maxProductOfNonOverlappingPallindromes(Comparator.naturalOrder());
-
-
-        Optional<Integer> oi = Optional.empty();
+        // type acceptance of Number and StringBuilder
         Function<Number, Optional<StringBuilder>> fm = n -> Optional.empty();
+        Optional<Integer> oi = Optional.empty();
         Optional<CharSequence> ocs = oi.flatMap(fm);
 
         // supplying multiple optional but executing only those present
@@ -35,7 +29,7 @@ public class OptionalsUtility {
                 .filter(Optional::isPresent)
                 .findFirst()
                 .flatMap(Function.identity());
-        System.out.println(s.get());
+        System.out.println(s.orElse("neither first nor second"));
     }
 
     private static Optional<String> first() {
@@ -48,6 +42,7 @@ public class OptionalsUtility {
         return Optional.empty();
     }
 
+    //
     public void optionalOrElseAPIs() {
         Optional<Integer> anyOddInStream = Stream.of(2, 4, 6, 8).filter(x -> x % 2 == 1).findAny();
         Integer previous = anyOddInStream.get();
