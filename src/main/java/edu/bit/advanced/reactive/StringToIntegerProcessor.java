@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 public class StringToIntegerProcessor<T, R> extends SubmissionPublisher<R> implements Flow.Processor<T, R> {
 
-    private Function<? super T, ? extends R> function;
+    private final Function<? super T, ? extends R> function;
     private Flow.Subscription subscription;
 
     StringToIntegerProcessor(Function<? super T, ? extends R> function) {

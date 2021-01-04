@@ -20,7 +20,7 @@ public class TextBlocks {
         ScriptEngine engine = new ScriptEngineManager().getEngineByName("js");
         // Before JEP-326
         String script = "function hello() {\n" +
-                "   print(\'\"Hello World\"\');\n" +
+                "   print('\"Hello World\"');\n" +
                 "}\n" +
                 "\n" +
                 "hello();\n";

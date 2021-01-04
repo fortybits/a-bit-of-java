@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 public class MyReactiveApp {
 
-    public static void main(String args[]) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException {
 
         SubmissionPublisher<String> publisher = new SubmissionPublisher<>();
         CustomSubscriber subs = new CustomSubscriber();

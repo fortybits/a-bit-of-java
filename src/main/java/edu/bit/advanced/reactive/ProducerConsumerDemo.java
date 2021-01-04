@@ -5,7 +5,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ProducerConsumerDemo {
-    private static BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(5);
+    private static final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(5);
 
     public static void main(String[] args) throws InterruptedException {
         int noOfProducers = 7;

@@ -4,43 +4,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Basics {
-    public static class CustomStackImpl<T> {
-        private StackNode<T> top;
-        // Nested class for StackNode
-
-        public CustomStackImpl() {
-
-        }
-
-        public T pop() {
-            if (top == null) throw new EmptyStackException();
-            T item = top.data;
-            top = top.next;
-            return item;
-        }
-
-        public void push(T item) {
-            StackNode<T> t = new StackNode<T>(item);
-            t.next = top;
-            top = t;
-        }
-
-        public T peek() {
-            if (top == null) throw new EmptyStackException();
-            return top.data;
-        }
-
-        public boolean isEmpty() {
-            return top == null;
-        }
-
-        private static class StackNode<T> {
-            private T data;
-            private StackNode<T> next;
-
-            public StackNode(T data) {
-                this.data = data;
-            }
+    //
+    private static void printingMethodDetails() {
+        System.out.println(Thread.currentThread().getName());
+        System.out.println(Thread.currentThread().getId());
+        System.out.println(Thread.currentThread().getStackTrace().length);
+        StackTraceElement[] details = Thread.currentThread().getStackTrace();
+        for (int i = 0; i < Thread.currentThread().getStackTrace().length; i++) {
+            System.out.println(details[i].getMethodName());
+            System.out.println(details[i].getClassName());
+            System.out.println(details[i].getLineNumber());
+            System.out.println(details[i].getFileName()); //Returns the class file name of called
         }
     }
 
@@ -77,55 +51,6 @@ public class Basics {
         String someNum = "123";
         someNum = someNum + ch.repeat(i);
         System.out.println(someNum);
-    }
-
-    public static class StackOverflowTagConsumer {
-
-        public static void main(String[] args) {
-            List<Question> currentQuestions = new ArrayList<>();
-
-            // if some action to sort by votes
-            displaySortedByVotes(currentQuestions);
-
-            // if another action to sort by newest
-            displaySortedByNewest(currentQuestions);
-        }
-
-        private static void displaySortedByVotes(List<Question> currentQuestions) {
-            System.out.println(StackOverflowTag.sortByNewest(currentQuestions));
-        }
-
-        private static void displaySortedByNewest(List<Question> currentQuestions) {
-            System.out.println(StackOverflowTag.sortByNewest(currentQuestions));
-        }
-    }
-
-    public static interface StackOverflowTag {
-
-        static List<Question> sortByNewest(List<Question> questions) {
-            return sortBy("NEWEST", questions);
-        }
-
-        static List<Question> sortByVotes(List<Question> questions) {
-            return sortBy("VOTE", questions);
-        }
-
-        //... other sortBy methods
-
-        static List<Question> sortBy(String sortByType, List<Question> questions) {
-            if (sortByType.equals("VOTE")) {
-                // sort by votes
-            }
-            if (sortByType.equals("NEWEST")) {
-                // sort using the created timestamp
-            }
-            return questions;
-        }
-    }
-
-    public static class Question {
-        int votes;
-        long created;
     }
 
     //
@@ -165,24 +90,6 @@ public class Basics {
         pq.add(new Grade("C++", 3));
         pq.add(new Grade("JAVA", 1));
         pq.forEach(System.out::println); // way to iterate on PQ is not to use 'iterator'
-    }
-
-    static class Grade implements Comparable<Grade> {
-        private String subject;
-        private int grade;
-
-        Grade(String subject, int grade) {
-            this.subject = subject;
-            this.grade = grade;
-        }
-
-        public int compareTo(Grade g) {
-            return this.grade - g.grade;
-        }
-
-        public String toString() {
-            return "sub : " + subject + " -> " + "grade : " + grade;
-        }
     }
 
     //
@@ -225,6 +132,113 @@ public class Basics {
         System.out.println("five");
     }
 
+    public interface StackOverflowTag {
+
+        static List<Question> sortByNewest(List<Question> questions) {
+            return sortBy("NEWEST", questions);
+        }
+
+        static List<Question> sortByVotes(List<Question> questions) {
+            return sortBy("VOTE", questions);
+        }
+
+        //... other sortBy methods
+
+        static List<Question> sortBy(String sortByType, List<Question> questions) {
+            if (sortByType.equals("VOTE")) {
+                // sort by votes
+            }
+            if (sortByType.equals("NEWEST")) {
+                // sort using the created timestamp
+            }
+            return questions;
+        }
+    }
+
+    public static class CustomStackImpl<T> {
+        private StackNode<T> top;
+        // Nested class for StackNode
+
+        public CustomStackImpl() {
+
+        }
+
+        public T pop() {
+            if (top == null) throw new EmptyStackException();
+            T item = top.data;
+            top = top.next;
+            return item;
+        }
+
+        public void push(T item) {
+            StackNode<T> t = new StackNode<T>(item);
+            t.next = top;
+            top = t;
+        }
+
+        public T peek() {
+            if (top == null) throw new EmptyStackException();
+            return top.data;
+        }
+
+        public boolean isEmpty() {
+            return top == null;
+        }
+
+        private static class StackNode<T> {
+            private final T data;
+            private StackNode<T> next;
+
+            public StackNode(T data) {
+                this.data = data;
+            }
+        }
+    }
+
+    public static class StackOverflowTagConsumer {
+
+        public static void main(String[] args) {
+            List<Question> currentQuestions = new ArrayList<>();
+
+            // if some action to sort by votes
+            displaySortedByVotes(currentQuestions);
+
+            // if another action to sort by newest
+            displaySortedByNewest(currentQuestions);
+        }
+
+        private static void displaySortedByVotes(List<Question> currentQuestions) {
+            System.out.println(StackOverflowTag.sortByNewest(currentQuestions));
+        }
+
+        private static void displaySortedByNewest(List<Question> currentQuestions) {
+            System.out.println(StackOverflowTag.sortByNewest(currentQuestions));
+        }
+    }
+
+    public static class Question {
+        int votes;
+        long created;
+    }
+
+    static class Grade implements Comparable<Grade> {
+        private final String subject;
+        private final int grade;
+
+        Grade(String subject, int grade) {
+            this.subject = subject;
+            this.grade = grade;
+        }
+
+        public int compareTo(Grade g) {
+            return this.grade - g.grade;
+        }
+
+        public String toString() {
+            return "sub : " + subject + " -> " + "grade : " + grade;
+        }
+    }
+
     // custom implementation for priority queue with only two elements
     public class PairPriorityQueue<E> {
         private final PriorityQueue<E> priorityQueue;
@@ -256,20 +270,6 @@ public class Basics {
 
         public PriorityQueue<E> get() {
             return this.priorityQueue;
-        }
-    }
-
-    //
-    private static void printingMethodDetails() {
-        System.out.println(Thread.currentThread().getName());
-        System.out.println(Thread.currentThread().getId());
-        System.out.println(Thread.currentThread().getStackTrace().length);
-        StackTraceElement[] details = Thread.currentThread().getStackTrace();
-        for (int i = 0; i < Thread.currentThread().getStackTrace().length; i++) {
-            System.out.println(details[i].getMethodName());
-            System.out.println(details[i].getClassName());
-            System.out.println(details[i].getLineNumber());
-            System.out.println(details[i].getFileName()); //Returns the class file name of called
         }
     }
 }

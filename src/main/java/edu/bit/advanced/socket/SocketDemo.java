@@ -1,15 +1,15 @@
 package edu.bit.advanced.socket;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class SocketDemo {
 
     public static void main(String[] args) {
         try {
             var server = new SocketServer().getWebSocket();
-            server.sendPing(ByteBuffer.wrap("Ping: Client <--- Server".getBytes(Charset.forName("UTF-16"))));
-            server.sendPing(ByteBuffer.wrap("Pong: Client <--- Server".getBytes(Charset.forName("UTF-16"))));
+            server.sendPing(ByteBuffer.wrap("Ping: Client <--- Server".getBytes(StandardCharsets.UTF_16)));
+            server.sendPing(ByteBuffer.wrap("Pong: Client <--- Server".getBytes(StandardCharsets.UTF_16)));
             server.sendText("Hello!", false);
             server.sendClose(1001, "Goodbye!");
         } catch (Exception e) {
