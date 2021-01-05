@@ -64,4 +64,10 @@ class StreamsUtilityTest {
         Integer[] out = streamsUtility.sortArrayWithEvensIntact(input);
         Assertions.assertArrayEquals(out, res);
     }
+
+    @Test
+    void testCollectionToArrayVersusStreamToArray() {
+        StreamsUtility streamsUtility = new StreamsUtility();
+        streamsUtility.collectionToArrayVersusStreamToArray();
+    }
 }

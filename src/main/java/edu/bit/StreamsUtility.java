@@ -1630,7 +1630,7 @@ public class StreamsUtility {
      */
 
     //
-    void spliteratorBehaviourToCloseStreams(){
+    void spliteratorBehaviourToCloseStreams() {
         Stream<String> stream = Stream.of("a", "b", "c");
         Spliterator<String> spliterator = stream.spliterator();
         // Some low lever operation with the spliterator
@@ -1718,9 +1718,25 @@ public class StreamsUtility {
             System.out.println(identityCheck.stream().reduce(" ", String::concat));
             System.out.println(identityCheck.stream().parallel().reduce(" ", String::concat));
 
-    //        List<String> strings = List.of("An", "example", "of", "a", "binary", "operator");
+            //        List<String> strings = List.of("An", "example", "of", "a", "binary", "operator");
             System.out.println(strings.stream().reduce("", (s, str) -> String.valueOf(s.equals(str))));
             System.out.println(strings.stream().parallel().reduce("", (s, str) -> String.valueOf(s.equals(str))));
         }
     }
+
+    // https://stackoverflow.com/questions/65567231/
+    // Response from Holger in comments over the difference
+    // https://stackoverflow.com/questions/49760818/why-can-i-collect-a-parallel-stream-to-an-arbitrarily-large-array-but-not-a-sequ#comment115937572_49760818
+    // Stream.toArray(IntFunction) is a genuine Stream operation.
+    // In contrast, Collection.toArray(IntFunction) has been added in JDK 11,
+    // so the default implementation had to work atop the existing interface methods,
+    // so it’s just implemented as return toArray(generator.apply(0));
+    // and the contract of the method it delegates to, is to accept an array of arbitrary size,
+    // creating and returning a new one if it is too small.
+    void collectionToArrayVersusStreamToArray() {
+        var list = Arrays.asList(1, 2, 3);
+        var collectionToArray = list.toArray(value -> new Integer[]{0});
+        var streamToArray = list.stream().toArray(value -> new Integer[]{0}); // fails with exception
+    }
+
 }
