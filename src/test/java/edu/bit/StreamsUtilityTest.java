@@ -68,6 +68,7 @@ class StreamsUtilityTest {
     @Test
     void testCollectionToArrayVersusStreamToArray() {
         StreamsUtility streamsUtility = new StreamsUtility();
-        streamsUtility.collectionToArrayVersusStreamToArray();
+        IllegalStateException illegalStateException = Assertions.assertThrows(
+                IllegalStateException.class, streamsUtility::collectionToArrayVersusStreamToArray);
     }
 }
