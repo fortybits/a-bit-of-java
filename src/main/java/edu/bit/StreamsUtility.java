@@ -1710,7 +1710,7 @@ public class StreamsUtility {
                     StringBuilder::append).toString());
 
             /*
-             * Analogous operation for reduction in parallel
+             * Analogous operation foreduction in parallel
              */
             System.out.println(strings.stream().parallel().collect(joining(" ")));
 
@@ -1724,7 +1724,6 @@ public class StreamsUtility {
         }
     }
 
-    //
     /**
      * https://stackoverflow.com/questions/65567231/
      * Response from Holger in comments over the difference https://stackoverflow.com/questions/49760818
