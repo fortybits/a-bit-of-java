@@ -2,9 +2,7 @@ package edu.bit;
 
 import sun.misc.Unsafe;
 
-import java.lang.annotation.Annotation;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.*;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 
@@ -150,5 +148,27 @@ public class Reflection {
 
         record Holder(int value) {
         }
+    }
+
+    // Inner annotations and their purpose
+    // https://stackoverflow.com/questions/65614890/what-is-the-purpose-of-having-annotation-tmesis-inside-java-qualified-types
+    static class My {
+        static class Builder {
+            public My build() {
+                return new My();
+            }
+        }
+    }
+
+    @Target({ElementType.METHOD, ElementType.TYPE_USE})
+    public @interface NotNull {
+    }
+
+    @Target({ElementType.METHOD, ElementType.TYPE_USE})
+    public @interface Other {
+    }
+
+    public static @NotNull @Other My.@NotNull @Other Builder createBuilder() {
+        return new My.Builder();
     }
 }
