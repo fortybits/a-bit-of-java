@@ -1,5 +1,7 @@
 package edu.bit;
 
+import java.io.Serializable;
+
 public class Sealed {
 
     public void sealedExperiments() {
@@ -32,5 +34,11 @@ public class Sealed {
             System.out.println("foo from non-sealed class");
         }
 
+    }
+
+    public sealed class A permits B {
+    }
+
+    public final class B extends A implements Serializable {
     }
 }
