@@ -6,31 +6,39 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class LazyMethodInvocationForStream {
+public class LazyInvocationUnderStreamsAsConsumer {
 
-    record A(int id) {
+    static final record A(int id) {
         A {
             System.out.printf("Constructing with %d!\n", id);
         }
     }
 
+
+    void intermediateStreamCreatedBySupplier() {
+        Supplier<List<A>> supplierOfA = this::getAList;
+        Stream.of(supplierOfA).map(Supplier::get).flatMap(Collection::stream);
+        Stream.generate(supplierOfA).limit(1).flatMap(Collection::stream);
+    }
+
     void terminateTheStreamCreatedBySupplier() {
-        Supplier<List<A>> supplierOfA = () -> getAList();
-        List<Integer> collectIntegers = supplierOfA.get().stream()
-                .map(A::id)
-                .collect(Collectors.toList());
-        List<A> limitedA = supplierOfA.get().stream()
+        Supplier<List<A>> supplierOfA = this::getAList;
+        long countAs = Stream.of(supplierOfA).map(Supplier::get)
+                .flatMap(Collection::stream)
+                .filter(s -> s.id() == 0)
+                .count();
+        List<A> limitedA = Stream.generate(supplierOfA)
                 .limit(1)
+                .flatMap(Collection::stream)
                 .collect(Collectors.toList());
         // just to consume
-        System.out.println(collectIntegers);
+        System.out.println(countAs);
         System.out.println(limitedA);
     }
 
-    void intermediateStreamCreatedBySupplier() {
-        Supplier<List<A>> supplierOfA = () -> getAList();
-        Stream.of(supplierOfA).map(Supplier::get).flatMap(Collection::stream);
-        Stream.generate(this::getAList).limit(1).flatMap(Collection::stream);
+    void incorrectIntermediateStreamCreatedBySupplier() {
+        Supplier<List<A>> supplierOfA = this::getAList;
+        supplierOfA.get().stream().map(A::id);
     }
 
     List<A> getAList() {
