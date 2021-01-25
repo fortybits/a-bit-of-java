@@ -41,4 +41,28 @@ public class Sealed {
 
     public final class B extends A implements Serializable {
     }
+
+    sealed interface Node {
+        record ConstNode(int i) implements Node {
+        }
+
+        record NegNode(Node n) implements Node {
+        }
+
+        record AddNode(Node left, Node right) implements Node {
+        }
+
+        record MultiNode(Node left, Node right) implements Node {
+        }
+    }
+//    int eval(Node n) {
+//        return switch (n) {
+//            case ConstNode( int i) -> i;
+//            case NegNode(var node) -> -eval(node);
+//            case AddNode(var left, var right) -> eval(left) + eval(right);
+//            case MultiNode(var left, var right) -> eval(left) * eval(right);
+//                // no default needed, Node is sealed and we covered all the cases
+//        };
+//    }
+
 }
