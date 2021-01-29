@@ -1,0 +1,54 @@
+
+`	java:S881"HExtract this increment or decrement operator into a dedicated statement.(Ï‰†øÿÿÿÿ
+`	java:S881"HExtract this increment or decrement operator into a dedicated statement.(Ï‰†øÿÿÿÿ
+[	java:S881"HExtract this increment or decrement operator into a dedicated statement.(İ¤Ò€
+[	java:S881"HExtract this increment or decrement operator into a dedicated statement.(İ¤Ò€
+[	java:S881"HExtract this increment or decrement operator into a dedicated statement.(İ¤Ò€
+e	java:S109"RAssign this magic number 2 to a well-named constant, and use the constant instead.(–ÚıÛ
+j	java:S109"RAssign this magic number 3 to a well-named constant, and use the constant instead.(×•åûüÿÿÿÿ
+j	java:S109"RAssign this magic number 3 to a well-named constant, and use the constant instead.(ğÀäÛûÿÿÿÿ
+e	java:S109"RAssign this magic number 7 to a well-named constant, and use the constant instead.(Úş—Ô
+e	java:S109"RAssign this magic number 7 to a well-named constant, and use the constant instead.(¸™¦«
+e	java:S109"RAssign this magic number 3 to a well-named constant, and use the constant instead.(¶¸˜
+e	java:S109"RAssign this magic number 4 to a well-named constant, and use the constant instead.(¶¸˜
+e	java:S109"RAssign this magic number 8 to a well-named constant, and use the constant instead.(¶¸˜
+f	java:S109"SAssign this magic number 11 to a well-named constant, and use the constant instead.(¶¸˜
+j	java:S109"RAssign this magic number 2 to a well-named constant, and use the constant instead.(ì«êÎÿÿÿÿÿ
+j	java:S109"RAssign this magic number 2 to a well-named constant, and use the constant instead.(ì«êÎÿÿÿÿÿ
+j	java:S109"RAssign this magic number 2 to a well-named constant, and use the constant instead.(à¬ı™ùÿÿÿÿ
+e	java:S109"RAssign this magic number 3 to a well-named constant, and use the constant instead.(§Ããƒ
+e	java:S109"RAssign this magic number 5 to a well-named constant, and use the constant instead.(³àğ
+j	java:S109"RAssign this magic number 2 to a well-named constant, and use the constant instead.(à•å‡ùÿÿÿÿ
+j	java:S109"RAssign this magic number 3 to a well-named constant, and use the constant instead.(ş¶Üøÿÿÿÿ
+e	java:S109"RAssign this magic number 4 to a well-named constant, and use the constant instead.(¨Õêâ
+e	java:S109"RAssign this magic number 2 to a well-named constant, and use the constant instead.(öÇŠú
+(
+java:S1700"Rename field "grade"(›ğ¶ş
+:
+java:S2384"!Return a copy of "priorityQueue".(ª—ì©üÿÿÿÿ
+4
+java:S2694"!Make this a "static" inner class.(â£Ò
+^
+java:S1132"JMove the "VOTE" string literal on the left side of this string comparison.(²œîß
+e
+java:S1132"LMove the "NEWEST" string literal on the left side of this string comparison.(–¯æ€ùÿÿÿÿ
+š
+java:S1186"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(î¹ÿåúÿÿÿÿ
+w
+java:S2972"^Reduce this class from 30 lines to the maximum allowed 25 or externalize it in a public class.(Â«¨ıÿÿÿÿ
+g	java:S122"TAt most one statement is allowed per line, but 2 statements were found on this line.(Åš˜ƒ
+'	java:S121"Missing curly brace.(Åš˜ƒ
+l
+java:S2293"YReplace the type specification in this constructor call with the diamond operator ("<>").(ò¯¥s
+g	java:S122"TAt most one statement is allowed per line, but 2 statements were found on this line.(Åš˜ƒ
+'	java:S121"Missing curly brace.(Åš˜ƒ
+r
+java:S1210"YOverride "equals(Object obj)" to comply with the contract of the "compareTo(T o)" method.(´ˆ»Îşÿÿÿÿ
+q
+java:S2972"^Reduce this class from 29 lines to the maximum allowed 25 or externalize it in a public class.(â£Ò
+]
+java:S1695"DThrow some other exception here, such as "IllegalArgumentException".(¦â‰‘ûÿÿÿÿ
+]
+java:S1695"DThrow some other exception here, such as "IllegalArgumentException".(”‘Àçüÿÿÿÿ
+N
+java:S1144":Remove this unused private "printingMethodDetails" method.(–ç¶Ğ
