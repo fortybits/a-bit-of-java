@@ -1,8 +1,0 @@
-
-A
-java:S1694"(Convert this "Goo" class to an interface(¢ä„“øÿÿÿÿ
-L
-java:S1610"3Convert the abstract class "Goo" into an interface.(¢ä„“øÿÿÿÿ
-v	java:S118"^Rename this abstract class name to match the regular expression '^Abstract[A-Z][a-zA-Z0-9]*$'.(¢ä„“øÿÿÿÿ
-[
-java:S2094"BRemove this empty class, write its code or make it an "interface".(¢ä„“øÿÿÿÿ
