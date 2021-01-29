@@ -16,6 +16,8 @@ class ReflectionTest {
                 .getAnnotation(Reflection.AnnotationParsingUsingReflection.Column.class).name());
     }
 
+    // as part of a compatibility issue after Java-8,
+    // the order of super interfaces matter https://stackoverflow.com/questions/65937177
     static class Foo extends Bar {
     }
 
