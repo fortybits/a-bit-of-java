@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class StreamsUtilityTest {
 
@@ -70,5 +71,12 @@ class StreamsUtilityTest {
         StreamsUtility streamsUtility = new StreamsUtility();
         IllegalStateException illegalStateException = Assertions.assertThrows(
                 IllegalStateException.class, streamsUtility::collectionToArrayVersusStreamToArray);
+    }
+
+    @Test
+    void testToListStreamVersusCollectors() {
+        // https://stackoverflow.com/questions/4028059/calling-java-varargs-method-with-single-null-argument
+        System.out.println(Stream.of(null, null).toList());
+        System.out.println(Stream.of(null).toList());
     }
 }
