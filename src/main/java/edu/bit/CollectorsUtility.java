@@ -1,8 +1,5 @@
 package edu.bit;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.*;
@@ -174,29 +171,29 @@ public class CollectorsUtility {
 
         private static void solve(List<Item> input) {
             Map<String, List<Item>> initial = input.stream()
-                    .collect(Collectors.groupingBy(Item::getId))
+                    .collect(Collectors.groupingBy(Item::id))
                     .entrySet()
                     .stream()
                     .filter(entry -> entry.getValue().size() > 5)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
             Map<String, List<Item>> andThen = input.stream()
-                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::getId),
+                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::id),
                             map -> map.entrySet().stream()
                                     .filter(e -> e.getValue().size() > 5)
                                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
 
             Map<String, Long> sqlCount = input.stream()
-                    .collect(Collectors.groupingBy(Item::getId, Collectors.counting()));
-            Map<String, List<Item>> sqlGroupHavingCount = input.stream().filter(i -> sqlCount.get(i.getId()) > 5)
-                    .collect(Collectors.groupingBy(Item::getId));
+                    .collect(Collectors.groupingBy(Item::id, Collectors.counting()));
+            Map<String, List<Item>> sqlGroupHavingCount = input.stream().filter(i -> sqlCount.get(i.id()) > 5)
+                    .collect(Collectors.groupingBy(Item::id));
 
         }
 
         private static void main(String... args) {
             List<Item> input = new ArrayList<>();
             Map<String, List<Item>> andThenAgain = input.stream()
-                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::getId,
+                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::id,
                             HashMap::new, Collectors.toList()),
                             m -> {
                                 m.values().removeIf(l -> l.size() <= 5);
@@ -204,7 +201,7 @@ public class CollectorsUtility {
                             }));
 
             Map<String, List<Item>> result = input.stream()
-                    .collect(having(Collectors.groupingBy(Item::getId), (key, list) -> list.size() > 5));
+                    .collect(having(Collectors.groupingBy(Item::id), (key, list) -> list.size() > 5));
 
         }
 
@@ -218,10 +215,7 @@ public class CollectorsUtility {
             });
         }
 
-        @Getter
-        @AllArgsConstructor
-        static class Item {
-            String id;
+        record Item(String id) {
         }
     }
 }
