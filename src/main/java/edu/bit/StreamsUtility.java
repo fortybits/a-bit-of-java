@@ -1727,33 +1727,29 @@ public class StreamsUtility {
     /**
      * https://stackoverflow.com/questions/65567231/
      * Response from Holger in comments over the difference https://stackoverflow.com/questions/49760818
+     *
      * @Holger any thoughts around, why would the API note and the implementation for the Collection#toArray(java.util.function.IntFunction)
      * and Stream#toArray(java.util.function.IntFunction) differ? e.g. var collectionToArray = list.toArray(value -> new Integer[]{0}); would succeed
      * while var streamToArray = list.stream().toArray(value -> new Integer[]{0}); would fail with a similar error as stated by the OP.
      * I couldn't really convince myself on the contradictory behaviour of the APIs. (shouldn't the consistency matter while designing?)
-     *
      * @Naman Stream.toArray(IntFunction) is a genuine Stream operation. In contrast,
      * Collection.toArray(IntFunction) has been added in JDK 11, so the default implementation had to work atop
      * the existing interface methods, so it’s just implemented as return toArray(generator.apply(0));
      * and the contract of the method it delegates to, is to accept an array of arbitrary size,
      * creating and returning a new one if it is too small. – Holger yesterday
-     *
      * @Holger the implementation was kind of clear to me, the introduction of API on an existing interface,
      * used as a bridge and hence making use of the existing method. I believe the underlying question that
      * I might have failed to pose was that why do we need such strict validatios(begin size, accept size, end size, etc)
      * within streams converted to an array and not be as lenient as we are while performing a collection to an array?
      * Is it to deal with concurrency?
-     *
      * @Naman “being lenient” is not a good thing, it’s a source of errors. But it’s not possible to change the contract of toArray(A[]).
      * For Collection.toArray(IntFunction) that is only used for creating the zero-sized array and
      * typically used with Type[]::new, such a check would not very useful.
      * In contrast, the Stream.toArray may use the IntFunction to create the final result array (when the size is known in advance).
-     *
      */
     void collectionToArrayVersusStreamToArray() {
         var list = Arrays.asList(1, 2, 3);
         var collectionToArray = list.toArray(value -> new Integer[]{0});
         var streamToArray = list.stream().toArray(value -> new Integer[]{0}); // fails with exception
     }
-
 }
