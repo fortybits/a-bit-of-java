@@ -3,6 +3,7 @@ package edu.bit;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -155,5 +156,37 @@ public class SwitchExpressions {
 
     private enum Day {
         MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+    }
+
+    // reference https://stackoverflow.com/questions/66204407/java-15-switch-expression-with-void-return-type
+    class Event {
+        EventType eventType;
+
+        public EventType getEventType() {
+            return eventType;
+        }
+    }
+
+    enum EventType {
+        ORDER, PAYMENT, INVOICE, ADDED
+    }
+
+    void processEventWithoutFailure(Event event) {
+        switch (event.getEventType()) {
+            case ORDER -> handleOrder(event);
+            case INVOICE, PAYMENT -> handlePayment(event);
+        }
+        // if you add a new enum type, this wouldn't compile
+        Consumer<Event> consumer = switch (event.getEventType()) {
+            case ORDER, ADDED -> this::handleOrder;
+            case INVOICE, PAYMENT -> this::handlePayment;
+        };
+        consumer.accept(event);
+    }
+
+    private void handlePayment(Event event) {
+    }
+
+    private void handleOrder(Event event) {
     }
 }
