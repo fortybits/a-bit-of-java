@@ -1,6 +1,5 @@
 package edu.bit;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -106,12 +105,6 @@ public class Records {
     public void leakingViaRecords() {
         Singleton singleton = Singleton.getInstance();
         System.out.println(singleton.leak());
-    }
-
-    // while using the mix of both the worlds such as lombok and java-records, intelliJ fails to compile
-    // complete details listed in https://stackoverflow.com/questions/60795837
-    public void mixOfWorldsWithLombok(String[] args) {
-        System.out.println(new Java("14", true).version());
     }
 
     // the behaviour os wrapping primitive integer array within a class versus within records
@@ -432,10 +425,6 @@ public class Records {
             System.out.println("I wanted to leak information!");
             return Singleton.getInstance();
         }
-    }
-
-    @AllArgsConstructor
-    private record Java(String version, boolean preview) {
     }
 
     static class Bar {
