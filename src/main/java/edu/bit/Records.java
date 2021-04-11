@@ -5,6 +5,10 @@ import lombok.NonNull;
 import lombok.Value;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.RecordComponent;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -582,5 +586,27 @@ public class Records {
         String name;
         int age;
         double timeSpent;
+    }
+
+    // constructor parameter names for records
+    // https://stackoverflow.com/questions/67038058/java-record-cannot-get-parameter-names-from-constructors
+    public void constructorParametersOfRecords() {
+        var recordTest2 = new RecordConstructors(1, 2, 3.0, LocalDateTime.now());
+        Class<?> objectClass = recordTest2.getClass();
+        Constructor<?>[] constructors = objectClass.getConstructors();
+        for (Constructor<?> con : constructors) {
+            System.out.println(con.getName());
+            Parameter[] parameters = con.getParameters();
+            for (Parameter parameter : parameters) {
+                System.out.printf("param: %s\n", parameter.getName());
+            }
+        }
+    }
+
+    public record RecordConstructors(int id, int something, double total, LocalDateTime createdOn) {
+
+        public RecordConstructors(int id, int something, double total) {
+            this(id, something, total, LocalDateTime.now());
+        }
     }
 }
