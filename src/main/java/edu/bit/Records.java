@@ -590,7 +590,7 @@ public class Records {
 
     // constructor parameter names for records
     // https://stackoverflow.com/questions/67038058/java-record-cannot-get-parameter-names-from-constructors
-    public void constructorParametersOfRecords() {
+    public static void constructorParametersOfRecords() {
         var recordTest2 = new RecordConstructors(1, 2, 3.0, LocalDateTime.now());
         Class<?> objectClass = recordTest2.getClass();
         Constructor<?>[] constructors = objectClass.getConstructors();

@@ -413,5 +413,13 @@ public class FunctionUtility {
         }
     }
 
+    // a common method to transform key, value and both for an input map
+    public <K, V, RK, RV> Map<RK, RV> transformMap(Map<K, V> input,
+                                                   Function<K, RK> keyTransformer,
+                                                   Function<V, RV> valueTransformer) {
+        return input.entrySet().stream()
+                .collect(Collectors.toMap(e -> keyTransformer.apply(e.getKey()),
+                        e -> valueTransformer.apply(e.getValue())));
+    }
 
 }
