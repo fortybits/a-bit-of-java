@@ -6,6 +6,7 @@ import lombok.Value;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.time.LocalDateTime;
@@ -607,6 +608,48 @@ public class Records {
 
         public RecordConstructors(int id, int something, double total) {
             this(id, something, total, LocalDateTime.now());
+        }
+    }
+
+    // if there be a need to identify the canonical constructor of a record for initialisation of serialisation purpose
+    // one can try to find the constructor using either of the following code
+    // https://stackoverflow.com/questions/67126109/is-there-a-way-to-recognise-a-java-16-records-canonical-constructor
+    public static void canonicalConstructorOfRecord() {
+        Class<?>[] componentTypes = Arrays.stream(Canonical.class.getRecordComponents())
+                .map(RecordComponent::getType)
+                .toArray(Class<?>[]::new);
+
+        Constructor<?> canonicalConstructor = Arrays.stream(Canonical.class.getDeclaredConstructors())
+                .filter(c -> Arrays.equals(c.getParameterTypes(), componentTypes))
+                .findFirst()
+                .orElseThrow();
+
+        System.out.println(canonicalConstructor);
+    }
+
+    static <T> Constructor<T> canonicalConstructorOfRecord(Class<T> recordClass)
+            throws NoSuchMethodException, SecurityException {
+        if (recordClass.isRecord()) {
+            Class<?>[] componentTypes = Arrays.stream(recordClass.getRecordComponents())
+                    .map(RecordComponent::getType)
+                    .toArray(Class<?>[]::new);
+            return recordClass.getDeclaredConstructor(componentTypes);
+        } else {
+            throw new IllegalArgumentException("The class is not a record.");
+        }
+    }
+
+    record Canonical(int i, int j) {
+        Canonical(int i) {
+            this(i, 0);
+        }
+
+        Canonical() {
+            this(0, 0);
+        }
+
+        Canonical(String i, String j) {
+            this(Integer.parseInt(i), Integer.parseInt(j));
         }
     }
 }
