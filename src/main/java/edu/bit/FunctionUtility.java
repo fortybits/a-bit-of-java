@@ -422,4 +422,18 @@ public class FunctionUtility {
                         e -> valueTransformer.apply(e.getValue())));
     }
 
+    public void transformSuppliersIntoOne(List<Supplier<String>> writtenLines) {
+        Supplier<String> combined = () -> new StringJoiner(", ")
+                .add(writtenLines.get(0).get())
+                .add(writtenLines.get(1).get())
+                .add(writtenLines.get(2).get())
+                .toString();
+        // effectively for joining string suppliers
+        Supplier<String> ac = () -> writtenLines.stream()
+                .map(Supplier::get)
+                .collect(Collectors.joining(", "));
+
+        System.out.println(combined.get());
+        //output: "String, String, String"
+    }
 }
