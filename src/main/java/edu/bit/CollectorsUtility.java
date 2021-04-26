@@ -218,4 +218,28 @@ public class CollectorsUtility {
         record Item(String id) {
         }
     }
+
+
+    // use case of ensuring that a stream consists of only one element
+    // https://stackoverflow.com/questions/22694884/filter-java-stream-to-1-and-only-1-element
+    public static String thereCanBeOnlyOne(Stream<String> stream) {
+//        List<String> things = stream.collect(Collectors.toList());
+//        if(things.size() != 1) {
+//            throw new IllegalArgumentException();
+//        }
+//        return things.get(0);
+        return stream.collect(toSingleton());
+    }
+
+    private static <T> Collector<T, ?, T> toSingleton() {
+        return Collectors.collectingAndThen(
+                Collectors.toList(),
+                list -> {
+                    if (list.size() != 1) {
+                        throw new IllegalStateException();
+                    }
+                    return list.get(0);
+                }
+        );
+    }
 }

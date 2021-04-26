@@ -934,9 +934,9 @@ public class StreamsUtility {
     @Getter
     @AllArgsConstructor
     class ReleaseTime {
-        private Date startDate;
-        private Date endDate;
-        private List<String> regions;
+        private final Date startDate;
+        private final Date endDate;
+        private final List<String> regions;
 
         ReleaseTime mergeRegions(ReleaseTime that) {
             return new ReleaseTime(this.startDate, this.endDate,
@@ -1277,7 +1277,7 @@ public class StreamsUtility {
         if (optional != null) {
             // execute either println or ()
             optional.ifPresentOrElse(System.out::println, () -> {
-                System.out.println("");
+                System.out.println();
             });
         }
 
@@ -1690,7 +1690,7 @@ public class StreamsUtility {
             System.out.println(strings.stream().reduce(" ", String::concat));
             // this will have O(n) runtime
             System.out.println(strings.stream().collect(() -> new StringBuilder(" "), StringBuilder::append,
-                    StringBuilder::append).toString());
+                    StringBuilder::append));
 
 
             /*
@@ -1707,7 +1707,7 @@ public class StreamsUtility {
              * each thread has its own local result container, the results of which are merged afterward.
              */
             System.out.println(strings.stream().collect(() -> new StringBuilder(" "), StringBuilder::append,
-                    StringBuilder::append).toString());
+                    StringBuilder::append));
 
             /*
              * Analogous operation foreduction in parallel
