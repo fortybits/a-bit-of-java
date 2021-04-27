@@ -946,7 +946,8 @@ public class StreamsUtility {
     }
 
 
-    //
+    // composite predicates
+    // https://stackoverflow.com/questions/24553761/how-to-apply-multiple-predicates-to-a-java-util-stream
     public void compositePredicates() {
         Stream<Integer> stream = Stream.of(5, 7, 9, 11, 13, 14, 21, 28, 35, 42, 49, 56, 63, 70, 71);
         IntPredicate p0 = n -> n > 10;
@@ -970,6 +971,12 @@ public class StreamsUtility {
                 .filter(compositePredicate)
                 .boxed()
                 .collect(Collectors.toList());
+    }
+
+    private <T> Predicate<T> matchAll(Predicate<T>... conditions) {
+        return Arrays.stream(conditions)
+                .reduce(Predicate::and)
+                .orElse(p -> true);
     }
 
     // detailed in https://stackoverflow.com/questions/59154995/cleaning-a-list-of-data-in-java8/59156527#59156527
