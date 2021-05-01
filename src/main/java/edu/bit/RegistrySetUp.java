@@ -9,85 +9,93 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class RegistrySetUp {
-    private static final ScheduledExecutorService scheduler1 = Executors.newScheduledThreadPool(1);
-    private static final ScheduledExecutorService scheduler2 = Executors.newScheduledThreadPool(1);
-    private static final ScheduledExecutorService updater = Executors.newScheduledThreadPool(1);
 
-    private static Map<String, FC> registry1 = new ConcurrentHashMap<>();
-    private static Map<String, FC> registry2 = new ConcurrentHashMap<>();
-    private static List<FC> fcs = new ArrayList<>();
+    static class Document {
+        String id;
 
-    static long calls = 0;
-    static long misses1 = 0;
-    static long misses2 = 0;
-
-    record FC(String id) {
+        Document(String id) {
+            this.id = id;
+        }
     }
+
+    private static final ScheduledExecutorService loadFirstDocuments = Executors.newScheduledThreadPool(1);
+    private static final ScheduledExecutorService loadSecondDocuments = Executors.newScheduledThreadPool(1);
+    private static final ScheduledExecutorService updateDocuments = Executors.newScheduledThreadPool(1);
+
+    private static Map<String, Document> firstRegistry = new ConcurrentHashMap<>();
+    private static Map<String, Document> secondRegistry = new ConcurrentHashMap<>();
+    private static List<Document> documents = new ArrayList<>();
+
+    public static final int TOTAL_DOCUMENTS = 1000;
+    static long calls;
+    static long firstMiss;
+    static long secondMiss;
+
 
     public static void main(String[] args) {
-        fcs = IntStream.range(0, 1000)
-                .mapToObj(i -> new FC(String.valueOf(i)))
+        documents = IntStream.range(0, TOTAL_DOCUMENTS)
+                .mapToObj(i -> new Document(String.valueOf(i)))
                 .collect(Collectors.toList());
+        refreshFirstDocuments();
+        refreshSecondDocuments();
 
-        RegistrySetUp registrySetUp = new RegistrySetUp();
-        registrySetUp.updateRegistry();
+        updateDocuments.scheduleAtFixedRate(RegistrySetUp::updatedDocuments,
+                2, 3, TimeUnit.MINUTES);
+        loadFirstDocuments.scheduleAtFixedRate(RegistrySetUp::refreshSecondDocuments,
+                1, 1, TimeUnit.MINUTES);
+        loadSecondDocuments.scheduleAtFixedRate(RegistrySetUp::refreshFirstDocuments,
+                1, 1, TimeUnit.MINUTES);
 
+        performRoutineCalls();
+        System.out.println("Calls : " + calls);
+        System.out.println("Misses 1 : " + firstMiss);
+        System.out.println("Misses 2 : " + secondMiss);
+    }
+
+    private static void performRoutineCalls() {
         long startTime = System.nanoTime();
-        Random random = new Random();
+        var random = new Random();
         while ((System.nanoTime() - startTime) < TimeUnit.MINUTES.toNanos(7)) {
-            getFC1(String.valueOf(random.nextInt(1000)));
-            getFC2(String.valueOf(random.nextInt(1000)));
+            lookUpFirst(String.valueOf(random.nextInt(TOTAL_DOCUMENTS)));
+            lookUpSecond(String.valueOf(random.nextInt(TOTAL_DOCUMENTS)));
             calls++;
         }
-
-        System.out.println("Calls : " + calls);
-        System.out.println("Misses 1 : " + misses1);
-        System.out.println("Misses 2 : " + misses2);
     }
 
-    private void updateRegistry() {
-        scheduler1.scheduleAtFixedRate(this::loadRegistry,
-                1, 1, TimeUnit.MINUTES);
-        scheduler2.scheduleAtFixedRate(this::loadRegistryExisting,
-                1, 1, TimeUnit.MINUTES);
-        updater.scheduleAtFixedRate(this::updatedFcs,
-                2, 3, TimeUnit.MINUTES);
-    }
-
-    private synchronized void loadRegistryExisting() {
-        List<FC> featuredCollections = fcs;
-        Map<String, FC> register = new HashMap<>();
-        for (FC f : featuredCollections) {
-            register.put(f.id(), f);
+    private static synchronized void refreshFirstDocuments() {
+        List<Document> featuredCollections = documents;
+        Map<String, Document> register = new HashMap<>();
+        for (Document f : featuredCollections) {
+            register.put(f.id, f);
         }
-        registry1 = register;
+        firstRegistry = register;
     }
 
-    private synchronized void loadRegistry() {
-        List<FC> featuredCollections = fcs;
-        for (FC f : featuredCollections) {
-            registry2.putIfAbsent(f.id(), f);
+    private static void refreshSecondDocuments() {
+        List<Document> featuredCollections = documents;
+        for (Document f : featuredCollections) {
+            secondRegistry.putIfAbsent(f.id, f);
         }
     }
 
-    private void updatedFcs() {
-        int currentSize = fcs.size();
-        fcs.add(new FC(String.valueOf(currentSize + 1)));
+    private static void updatedDocuments() {
+        int currentSize = documents.size();
+        documents.add(new Document(String.valueOf(currentSize + 1)));
     }
 
-    public static Optional<FC> getFC1(String id) {
-        if (registry1.get(id) == null) {
-            System.out.println(id);
-            misses1++;
+    public static Optional<Document> lookUpFirst(String id) {
+        if (firstRegistry.get(id) == null) {
+            System.out.println("First " + id);
+            firstMiss++;
         }
-        return Optional.ofNullable(registry1.get(id));
+        return Optional.ofNullable(firstRegistry.get(id));
     }
 
-    public static Optional<FC> getFC2(String id) {
-        if (registry2.get(id) == null) {
-            System.out.println(id);
-            misses2++;
+    public static Optional<Document> lookUpSecond(String id) {
+        if (secondRegistry.get(id) == null) {
+            System.out.println("Second " + id);
+            secondMiss++;
         }
-        return Optional.ofNullable(registry2.get(id));
+        return Optional.ofNullable(secondRegistry.get(id));
     }
 }
