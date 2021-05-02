@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class RegistrySetUp {
+public class ConcurrentLoadAndLookUp {
 
     static class Document {
         String id;
@@ -39,11 +39,11 @@ public class RegistrySetUp {
         refreshFirstDocuments();
         refreshSecondDocuments();
 
-        updateDocuments.scheduleAtFixedRate(RegistrySetUp::updatedDocuments,
-                2, 3, TimeUnit.MINUTES);
-        loadFirstDocuments.scheduleAtFixedRate(RegistrySetUp::refreshSecondDocuments,
+        updateDocuments.scheduleAtFixedRate(ConcurrentLoadAndLookUp::updatedDocuments,
+                1, 2, TimeUnit.MINUTES);
+        loadFirstDocuments.scheduleAtFixedRate(ConcurrentLoadAndLookUp::refreshSecondDocuments,
                 1, 1, TimeUnit.MINUTES);
-        loadSecondDocuments.scheduleAtFixedRate(RegistrySetUp::refreshFirstDocuments,
+        loadSecondDocuments.scheduleAtFixedRate(ConcurrentLoadAndLookUp::refreshFirstDocuments,
                 1, 1, TimeUnit.MINUTES);
 
         performRoutineCalls();
@@ -55,7 +55,7 @@ public class RegistrySetUp {
     private static void performRoutineCalls() {
         long startTime = System.nanoTime();
         var random = new Random();
-        while ((System.nanoTime() - startTime) < TimeUnit.MINUTES.toNanos(7)) {
+        while ((System.nanoTime() - startTime) < TimeUnit.MINUTES.toNanos(5)) {
             lookUpFirst(String.valueOf(random.nextInt(TOTAL_DOCUMENTS)));
             lookUpSecond(String.valueOf(random.nextInt(TOTAL_DOCUMENTS)));
             calls++;
