@@ -12,4 +12,5 @@ module a.bit.of.java {
     requires jdk.jlink;
 
     requires lombok;
+    requires com.google.common;
 }
