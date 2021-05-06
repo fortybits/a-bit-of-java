@@ -1761,7 +1761,7 @@ public class StreamsUtility {
         var streamToArray = list.stream().toArray(value -> new Integer[]{0}); // fails with exception
     }
 
-    // finding out an implementatiton of step average on infinite stream
+    // finding out an implementation of step average on infinite stream
     // https://stackoverflow.com/questions/67405898/given-an-infinite-sequence
     static Stream<Double> stepAverage(Stream<Double> stream, int step) {
         return Streams.mapWithIndex(stream, (from, index) -> Map.entry(index, from))
