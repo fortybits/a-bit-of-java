@@ -1769,4 +1769,23 @@ public class StreamsUtility {
                         Collectors.averagingDouble(Map.Entry::getValue)))
                 .values().stream();
     }
+
+
+    // stream's toList would not be able to return the parent type list
+    // https://stackoverflow.com/questions/67517262/why-cant-i-use-streamtolist-to-collect-a-list-of-a-class-interface
+    private interface Dodo {
+    }
+
+    private class FancyDodo implements Dodo {
+    }
+
+    public void streamToListVsCollectorToList() {
+        final List<FancyDodo> fancyDodos = Stream.of(new FancyDodo()).toList();
+        final List<Dodo> againFancyDodos = Arrays.asList(Stream.of(new FancyDodo())
+                .toArray(Dodo[]::new));
+        final List<Dodo> dodos = Stream.of(new FancyDodo())
+                .collect(Collectors.toList());
+        // support the type
+        final List<Dodo> noFancyDodos = Stream.<Dodo>of(new FancyDodo()).toList();
+    }
 }
