@@ -245,7 +245,7 @@ public class CollectorsUtility {
 
     // to find all the max values fom a list
     // https://stackoverflow.com/questions/29334404/how-to-force-max-to-return-all-maximum-values-in-a-java-stream
-    static <T> Collector<T,?,List<T>> maxList(Comparator<? super T> comp) {
+    static <T> Collector<T, ?, List<T>> maxList(Comparator<? super T> comp) {
         return Collector.of(
                 ArrayList::new,
                 (list, t) -> {
