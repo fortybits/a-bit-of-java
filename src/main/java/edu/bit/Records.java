@@ -1,12 +1,7 @@
 package edu.bit;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-
 import java.io.*;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.time.LocalDateTime;
@@ -279,10 +274,14 @@ public class Records {
     record CompositeInterface<T, V>(V call, T get) implements Callable<V>, Supplier<T> {
     }
 
-    @Value
     public static class City {
         Integer id;
         String name;
+
+        public City(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
     }
 
     record CityRecord(Integer id, String name) {
@@ -380,7 +379,7 @@ public class Records {
         static int valStat = 10;
 
         static {
-            record InnerRec(@NonNull String innerText) {
+            record InnerRec(@Reflection.NotNull String innerText) {
                 public InnerRec {
                     System.out.println(innerText);
                 }
@@ -511,7 +510,6 @@ public class Records {
         }
     }
 
-    @Builder
     private record One(String one, Two two) implements Serializable {
         public One(String one) {
             this(one, null);
@@ -582,11 +580,16 @@ public class Records {
         }
     }
 
-    @Value
     public class Student {
         String name;
         int age;
         double timeSpent;
+
+        public Student(String name, int age, double timeSpent) {
+            this.name = name;
+            this.age = age;
+            this.timeSpent = timeSpent;
+        }
     }
 
     // constructor parameter names for records

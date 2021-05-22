@@ -1,9 +1,6 @@
 package edu.bit;
 
 import com.google.common.collect.Streams;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -614,16 +611,31 @@ public class StreamsUtility {
     record Node(int degree) {
     }
 
-    @Getter
     public class PriceGroup {
         String priceName;
         String priceGroup;
+
+        public String getPriceName() {
+            return priceName;
+        }
+
+        public String getPriceGroup() {
+            return priceGroup;
+        }
     }
 
-    @Getter
+
     public class Price {
         String priceName;
         Integer price;
+
+        public String getPriceName() {
+            return priceName;
+        }
+
+        public Integer getPrice() {
+            return price;
+        }
     }
 
     public void dropWhileVersusTakeWhile() {
@@ -927,21 +939,16 @@ public class StreamsUtility {
     public static void groupByStartAndEndDateToMerge() {
         List<ReleaseTime> ungroupedAvailability = List.of();
         Collection<ReleaseTime> mergedRegionsCollection = ungroupedAvailability.stream()
-                .collect(Collectors.toMap(t -> Arrays.asList(t.getStartDate(), t.getEndDate()),
+                .collect(Collectors.toMap(t -> Arrays.asList(t.startDate(), t.endDate()),
                         Function.identity(), ReleaseTime::mergeRegions))
                 .values();
     }
 
-    @Getter
-    @AllArgsConstructor
-    class ReleaseTime {
-        private final Date startDate;
-        private final Date endDate;
-        private final List<String> regions;
+    record ReleaseTime(Date startDate, Date endDate, List<String> regions) {
 
         ReleaseTime mergeRegions(ReleaseTime that) {
             return new ReleaseTime(this.startDate, this.endDate,
-                    Stream.concat(this.getRegions().stream(), that.getRegions().stream())
+                    Stream.concat(this.regions().stream(), that.regions().stream())
                             .collect(Collectors.toList()));
         }
     }
@@ -1532,12 +1539,11 @@ public class StreamsUtility {
     // generic approach to solving similar aggregate operations on various fields
     private Nutrients nutrientsCalculator(List<FoodNutritional> responseBody) {
         Supplier<Stream<FoodNutritional>> foodNutritionalSupplier = responseBody::stream;
-        return Nutrients.builder()
-                .carbohydrates(sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalCarbohydrate))
-                .protein(sumNutrition(foodNutritionalSupplier, FoodNutritional::getProtein))
-                .fat(sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalFat))
-                .dietaryFiber(sumNutrition(foodNutritionalSupplier, FoodNutritional::getDietaryFiber))
-                .build();
+        return new Nutrients(
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalCarbohydrate),
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getProtein),
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalFat),
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getDietaryFiber));
     }
 
     private Double sumNutrition(Supplier<Stream<FoodNutritional>> foodNutritionalSupplier,
@@ -1545,20 +1551,30 @@ public class StreamsUtility {
         return foodNutritionalSupplier.get().mapToDouble(nutritionTypeFunction).sum();
     }
 
-    @Builder
-    static class Nutrients {
-        private final Double carbohydrates;
-        private final Double protein;
-        private final Double fat;
-        private final Double dietaryFiber;
+    record Nutrients(Double carbohydrates, Double protein, Double fat, Double dietaryFiber) {
     }
 
-    @Getter
     static class FoodNutritional {
         private Double totalFat;
         private Double totalCarbohydrate;
         private Double dietaryFiber;
         private Double protein;
+
+        public Double getTotalFat() {
+            return totalFat;
+        }
+
+        public Double getTotalCarbohydrate() {
+            return totalCarbohydrate;
+        }
+
+        public Double getDietaryFiber() {
+            return dietaryFiber;
+        }
+
+        public Double getProtein() {
+            return protein;
+        }
     }
 
 

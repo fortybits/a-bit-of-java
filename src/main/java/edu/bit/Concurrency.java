@@ -1,7 +1,5 @@
 package edu.bit;
 
-import lombok.SneakyThrows;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -141,13 +139,16 @@ public class Concurrency {
             t3.start();
         }
 
-        @SneakyThrows
         @Override
         public void run() {
             //         this.phaser.register();  // Question
             phaserDetails("After register");
             for (int i = 0; i < 2; i++) {
-                TimeUnit.SECONDS.sleep(2);
+                try {
+                    TimeUnit.SECONDS.sleep(2);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 phaserDetails("Before await" + i + ":");
                 this.phaser.arriveAndAwaitAdvance();
                 phaserDetails("After advance" + i + ":");
