@@ -22,6 +22,9 @@ public class StreamOfVsIntStream {
                 .findFirst();
         IntStream.range(0, 4)
                 .peek(System.out::println)
+                .min();
+        IntStream.range(0, 4)
+                .peek(System.out::println)
                 .max(); // why not use the same optimisation here?
 
         System.out.println("#3");
