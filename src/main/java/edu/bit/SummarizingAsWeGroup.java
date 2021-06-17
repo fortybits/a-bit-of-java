@@ -3,7 +3,7 @@ package edu.bit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class saaa {
+public class SummarizingAsWeGroup {
     public static void main(String[] args) {
         List<SqlResult> listSqlResult = new ArrayList<>();
         listSqlResult.add(new SqlResult("a1", "b1", 123));
@@ -19,17 +19,6 @@ public class saaa {
         listSqlResult.add(new SqlResult("a2", "b2", 73));
         listSqlResult.add(new SqlResult("a2", "b2", 15));
 
-        List<Result> listResult = listSqlResult.stream()
-                .collect(Collectors.groupingBy(SqlResult::getKey1,
-                        Collectors.groupingBy(SqlResult::getKey2)))
-                .values().stream()
-                .map(e -> new Result(
-                        e.get(0).get(0).getKey1(),
-                        e.get(0).get(0).getKey2(),
-                        e.get(0).stream().mapToDouble(SqlResult::getVal).average().getAsDouble(),
-                        (long) e.get(0).size()))
-                .collect(Collectors.toList());
-
         Map<List<String>, DoubleSummaryStatistics> groupedStatistics = listSqlResult.stream()
                 .collect(Collectors.groupingBy(sr -> Arrays.asList(sr.getKey1(), sr.getKey2()),
                         Collectors.summarizingDouble(SqlResult::getVal)));
@@ -38,6 +27,15 @@ public class saaa {
                 .map(e -> new Result(e.getKey().get(0), e.getKey().get(1),
                         e.getValue().getAverage(), e.getValue().getCount()))
                 .collect(Collectors.toList());
+        System.out.println(results);
+
+        List<Student> students = Arrays.asList(
+                new Student("Arun", "ECE", new SubjectMarks(12, 34, 56)),
+                new Student("JIM", "ECE", new SubjectMarks(20, 40, 56)),
+                new Student("ROSE", "CSE", new SubjectMarks(30, 34, 45)),
+                new Student("Mary", "CSE", new SubjectMarks(40, 34, 23))
+        );
+        summarise(students);
     }
 
     static class SqlResult {
@@ -76,20 +74,70 @@ public class saaa {
             this.avgVal = avgVal;
             this.count = count;
         }
+    }
 
-        public String getKey1() {
-            return key1;
+    static class Student {
+        private String firstName, branch;
+        private SubjectMarks subject;
+
+        public Student(String firstName, String branch, SubjectMarks subject) {
+            this.firstName = firstName;
+            this.branch = branch;
+            this.subject = subject;
         }
 
-        public String getKey2() {
-            return key2;
+        public SubjectMarks getSubject() {
+            return subject;
         }
 
-        public Double getAvgVal() {
-            return avgVal;
+        public String getFirstName() {
+            return firstName;
         }
 
-        public Long getCount() {
-            return count;
+        public String getBranch() {
+            return branch;
         }
     }
+
+    static class SubjectMarks {
+        int maths, biology, computers;
+
+        public SubjectMarks(int maths, int biology, int computers) {
+            this.maths = maths;
+            this.biology = biology;
+            this.computers = computers;
+
+        }
+
+        public int getMaths() {
+            return maths;
+        }
+
+        public int getBiology() {
+            return biology;
+        }
+
+        public int getComputers() {
+            return computers;
+        }
+
+        public double getAverageMarks() {
+            return (getBiology() + getMaths() + getComputers()) / 3;
+        }
+    }
+
+    static void summarise(List<Student> stList) {
+        Map<String, LinkedHashMap<String, Double>> branchStudentsSortedOnMarks = stList.stream()
+                .sorted(Comparator.comparingDouble(s -> s.getSubject().getAverageMarks()))
+                .collect(Collectors.groupingBy(Student::getBranch, LinkedHashMap::new,
+                        Collectors.collectingAndThen(
+                                Collectors.toMap(Student::getFirstName,
+                                        s -> s.getSubject().getAverageMarks(), Double::max),
+                                m -> m.entrySet().stream()
+                                        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                                        .collect(Collectors.toMap(Map.Entry::getKey,
+                                                Map.Entry::getValue, (a, b) -> b, LinkedHashMap::new))
+                        )));
+        System.out.println(branchStudentsSortedOnMarks);
+    }
+}
