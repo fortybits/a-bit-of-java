@@ -20,6 +20,5 @@ class MemoryConstantsTest {
     void verifyCustomMemoryConstable() throws ReflectiveOperationException {
         MemoryConstants memory = new MemoryConstants(1);
         Assertions.assertEquals(memory.describeConstable(), Optional.of(ConstantDescs.CD_long));
-        Assertions.assertEquals(memory.resolveConstantDesc(MethodHandles.publicLookup()), memory);
     }
 }

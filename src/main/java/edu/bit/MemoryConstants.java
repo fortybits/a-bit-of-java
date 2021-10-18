@@ -14,27 +14,11 @@ import java.util.Optional;
  * <p>
  * The API is completely documented under https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202031
  */
-public record MemoryConstants(int size) implements Constable, ConstantDesc {
+public record MemoryConstants(int size) implements Constable {
     @Override
     public Optional<? extends ConstantDesc> describeConstable() {
-        Optional.of(new ClassDesc() {
-            @Override
-            public String descriptorString() {
-                return "Memory:= " + size;
-            }
-
-            @Override
-            public Object resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-                return lookup.in(MemoryConstants.class).toString();
-            }
-        });
         Optional.of(ConstantDescs.CD_Class); // ClassDesc.of("java.lang.Class")
         return Optional.of(ConstantDescs.CD_long); //  ClassDesc.ofDescriptor("J")
-    }
-
-    @Override
-    public MemoryConstants resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        return this;
     }
 
     @Override
