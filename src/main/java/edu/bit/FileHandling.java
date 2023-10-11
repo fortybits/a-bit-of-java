@@ -39,6 +39,9 @@ public class FileHandling {
         }
     }
 
+    public static void createFile(String directoryPath, String fileName) {
+    }
+
     public void createAFreshDirectoryForScreenShotsDuringAutomation() throws IOException {
         String currentDirectory = System.getProperty("user.dir");
         File screenshotDirectory = new File(currentDirectory + "/logs/screenshots");
@@ -68,15 +71,11 @@ public class FileHandling {
         return true;
     }
 
-
     public void fileHandlingSampleWithStream() {
         IntStream.range(0, 5).forEach(i -> createFile("", "test.txt"));
         Stream.iterate("text.txt", x -> "test.txt")
                 .limit(5)
                 .forEach(x -> createFile("", x));
-    }
-
-    public static void createFile(String directoryPath, String fileName) {
     }
 
     //

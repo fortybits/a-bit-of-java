@@ -42,6 +42,11 @@ import static java.util.stream.Collectors.*;
  */
 public class StreamsUtility {
 
+    //
+    static List<Predicate<Object>> predicates = List.of(
+            obj -> instanceOfAny(obj, Set.of(Integer.class, Long.class, String.class, Boolean.class)),
+            obj -> instanceOfAny(obj, Set.of(Map.class)));
+
     public static void calculateAverageValuePerGroup() {
         record Item(String groupName, Double value) {
         }
@@ -389,15 +394,15 @@ public class StreamsUtility {
     private static void updateAListOfMapOfStrings() {
         // alternatively without object creation and using Map<String, String>
         List<Map<String, String>> mapListOne = List.of(Map.of("partyId", "1",
-                "accountId", "1",
-                "sourceSystem", "1"),
+                        "accountId", "1",
+                        "sourceSystem", "1"),
                 Map.of("partyId", "2",
                         "accountId", "2",
                         "sourceSystem", "2"));
 
         List<Map<String, String>> mapListTwo = List.of(Map.of("partyId", "3",
-                "accountId", "3",
-                "sourceSystem", "3"),
+                        "accountId", "3",
+                        "sourceSystem", "3"),
                 Map.of("partyId", "1",
                         "accountId", "2",
                         "sourceSystem", "2"));
@@ -488,6 +493,280 @@ public class StreamsUtility {
                 .collect(Collectors.toList());
     }
 
+    public static void groupByAndSort(String[] args) {
+        List<String> items = Arrays.asList("apple", "apple", "banana", "apple", "orange", "banana", "papaya");
+
+        // 1.1== >Group by a List and display the total count of it
+        Map<String, Long> result =
+                items.stream().sorted().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        System.out.println("RESULT : " + result);
+
+        // 1.2 Add sorting
+        Map<String, Long> finalMap = new LinkedHashMap<>();
+        result.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .forEachOrdered(e -> finalMap.put(e.getKey(), e.getValue()));
+        System.out.println("FINAL RESULT : " + finalMap);
+    }
+
+    private static List<User> userListWithSameEmailAndMergeLists(List<User> users) {
+        return new ArrayList<>(users.stream()
+                .collect(Collectors.toMap(User::email, Function.identity(), (user1, user2) -> {
+                    List<Integer> l1 = user1.lists();
+                    List<Integer> l2 = user2.lists();
+                    List<Integer> merge = IntStream.range(0, l1.size())
+                            .mapToObj(i -> (l1.get(i) == 0 && l2.get(i) == 0) ? 0 : 1)
+                            .collect(Collectors.toList());
+                    return new User(user1.email(), merge);
+                })).values());
+    }
+
+    private static Map<Integer, List<Integer>> collectGroupingByAndMapping(List<ProductCatalogue> productCatalogueList) {
+        return productCatalogueList.stream()
+                .collect(Collectors.groupingBy(ProductCatalogue::pId,
+                        Collectors.mapping(ProductCatalogue::cId, Collectors.toList())));
+
+    }
+
+    private static List<Stake> stakesHighestPerCustomerForParticularStakeLimited(List<Stake> stakes, int maxBetOfferId) {
+        return stakes.stream()
+                .filter(x -> x.betOfferI() == maxBetOfferId) // retains only objects where their offer is if equal to the supplied offerId
+                .collect(toMap(Stake::customerId,    // customer ids do not repeat as you've mentioned.
+                        Function.identity(),
+                        BinaryOperator.maxBy(Comparator.comparingInt(Stake::stake))))  //   gets the highest stake values customer wise.
+                .values()
+                .stream()
+                .collect(groupingBy(Stake::stake)) // particular stake
+                .values()
+                .stream()
+                .flatMap(x -> x.stream().limit(20)) //  and limited to 20 customers for a particular stake.
+                .collect(Collectors.toList());
+    }
+
+    private static Date getDateFromStr(String dateStr) throws ParseException {
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(dateStr);
+    }
+
+    // common use case for grouping
+    public static void groupByStartAndEndDateToMerge() {
+        List<ReleaseTime> ungroupedAvailability = List.of();
+        Collection<ReleaseTime> mergedRegionsCollection = ungroupedAvailability.stream()
+                .collect(Collectors.toMap(t -> Arrays.asList(t.startDate(), t.endDate()),
+                        Function.identity(), ReleaseTime::mergeRegions))
+                .values();
+    }
+
+    private static boolean isPrime(Integer n) {
+        return IntStream.range(2, n) // note  division by zero possible in your attempt
+                .noneMatch(i -> n % i == 0);
+    }
+
+    // conversion of a list or stream to a byte[] e.g. type widening to int and conversion to ByteArrayOutputStream
+    public static byte[] toByteArray(IntStream stream) {
+        return stream.collect(ByteArrayOutputStream::new, (baos, i) -> baos.write((byte) i),
+                        (baos1, baos2) -> baos1.write(baos2.toByteArray(), 0, baos2.size()))
+                .toByteArray();
+    }
+
+    public static byte[] toByteArrayFunctional(List<Byte> listByte) {
+        return listByte.stream().collect(ByteArrayOutputStream::new, ByteArrayOutputStream::write,
+                        (baos1, baos2) -> baos1.writeBytes(baos2.toByteArray()))
+                .toByteArray();
+    }
+
+    public static byte[] toByteArrayIterative(List<Byte> listByte) {
+        byte[] arrayBytes = new byte[listByte.size()];
+        IntStream.range(0, listByte.size()).forEach(i -> arrayBytes[i] = listByte.get(i));
+        return arrayBytes;
+    }
+
+    // custom comparator for a problem detailed in
+    // https://stackoverflow.com/questions/60914762/ignore-zero-values-at-sorted-in-lambda
+    public static <T> Comparator<T> zerosLast(ToIntFunction<? super T> keyExtractor) {
+        return (o1, o2) -> {
+            if (keyExtractor.applyAsInt(o1) == 0) {
+                return keyExtractor.applyAsInt(o2) == 0 ? 0 : 1;
+            } else {
+                return keyExtractor.applyAsInt(o2) == 0 ? -1 :
+                        Integer.compare(keyExtractor.applyAsInt(o1),
+                                keyExtractor.applyAsInt(o2));
+            }
+        };
+    }
+
+    //
+    public static double[] sumUpColumns(double[][] x) {
+        return IntStream.range(0, Stream.of(x).mapToInt(a -> a.length).max().orElse(0))
+                .mapToDouble(i -> Arrays.stream(x)
+                        .mapToDouble(item -> i < item.length ? item[i] : 0.0)
+                        .sum())
+                .toArray();
+    }
+
+    public static double[] sumUpRows(double[][] x) {
+        return Stream.of(x)
+                .mapToDouble((double[] row) -> DoubleStream.of(row).sum())
+                .toArray();
+    }
+
+    private static Optional<? extends String> supplier() {
+        return Optional.of("");
+    }
+
+    //
+    public static void partitionGroupSummingInt(List<Officer> off) {
+        int totalDaysInOffice = off.stream().mapToInt(Officer::totalDaysInOffice).sum();
+
+        List<Officer> officerList = Arrays.asList(new Officer("John", 5000),
+                new Officer("Matthew", 3000), new Officer("Robert", 2000),
+                new Officer("Dave", 2000), new Officer("Patrick", 10000));
+
+        Map<Boolean, Map<Officer, Integer>> collect = officerList.stream()
+                .collect(Collectors.partitioningBy(o -> o.totalDaysInOffice() >= 10000,
+                        Collectors.groupingBy(o -> o, Collectors.summingInt(Officer::totalDaysInOffice))));
+        System.out.println(collect);
+    }
+
+    private static Set<Skills> mergeSkills(Set<Skills> s1, Set<Skills> s2) {
+        if (s1.size() > s2.size()) {
+            s1.addAll(s2);
+            return s1;
+        } else {
+            s2.addAll(s1);
+            return s2;
+        }
+    }
+
+    // this was asked at the following link
+    // https://stackoverflow.com/questions/58960735/why-does-iterating-a-mapped-sorted-stream-evaluate-more-elements-than-necessar
+    public static void mappedSortedStreamBehaviourOnTraversal() {
+        final List<Character> ALPHABET = List.of('a', 'b', 'c', 'd', 'e', 'f');
+        final int STOP_ORDINAL = 'b' - 'a';
+        Stream<Integer> ordinals = ALPHABET.stream()
+                .sorted()
+                .map(StreamsUtility::ordinal);
+
+        int count = 0;
+
+        Iterator<Integer> iterator = ordinals.iterator();
+        while (iterator.hasNext()) {
+            int ordinal = iterator.next();
+            if (ordinal > STOP_ORDINAL) {
+                System.out.println("stopping at " + ordinal);
+                break;
+            }
+            System.out.println("consuming " + ordinal);
+            ++count;
+        }
+
+        System.out.println("consumed " + count + " ordinals");
+    }
+
+    private static int ordinal(char letter) {
+        int ordinal = letter - 'a';
+        System.out.println("performing EXTREMELY EXPENSIVE mapping of " + letter + " -> " + ordinal);
+        return ordinal;
+    }
+
+    // primitive iterators are rarely used in practice, but are efficient tool for iterating over int, long stream etc
+    public static boolean isValidJv8(String number) {
+        PrimitiveIterator.OfInt factor = IntStream.iterate(1, i -> 3 - i).iterator();
+        int sum = new StringBuilder(number).reverse()
+                .toString().chars()
+                .map(c -> c - '0')
+                .map(i -> i * factor.nextInt())
+                .reduce(0, (a, b) -> a + b / 10 + b % 10);
+        return (sum % 10) == 0;
+    }
+
+    public static boolean isValidJv9(long number) {
+        PrimitiveIterator.OfInt factor = IntStream.iterate(1, i -> 3 - i).iterator();
+        long sum = LongStream.iterate(number, n -> n > 0, n -> n / 10)
+                .map(n -> n % 10)
+                .map(i -> i * factor.nextInt())
+                .reduce(0, (a, b) -> a + b / 10 + b % 10);
+        return (sum % 10) == 0;
+    }
+
+    /**
+     * <p>
+     * Output ::
+     * Sample1
+     * Sample2
+     * Sample3
+     * Sample5
+     * <p>
+     * Expected ::
+     * Sample1
+     * Sample2
+     * Sample3
+     * this was discussed under https://stackoverflow.com/questions/47888814 and registered as bug at
+     * https://bugs.openjdk.java.net/browse/JDK-8193856
+     */
+    public static void incorrectTakeWhileBehaviourWithFlatMap() {
+        String[][] strArray = {{"Sample1", "Sample2"}, {"Sample3", "Sample4", "Sample5"}};
+
+        Arrays.stream(strArray)
+                .flatMap(Arrays::stream)
+                .takeWhile(ele -> !ele.equalsIgnoreCase("Sample4"))
+                .forEach(System.out::println);
+    }
+
+    static boolean instanceOfAny(Object obj, Set<Class<?>> set) {
+        return set.stream().anyMatch(clazz -> clazz.isInstance(obj));
+    }
+
+    static int grouper(Object obj) {
+        return IntStream.range(0, predicates.size())
+                .filter(i -> predicates.get(i).test(obj))
+                .findFirst()
+                .orElse(predicates.size());
+    }
+
+    /*
+     *  Some sources admit better implementations than others:
+     *  an ArrayList with more than one element can always be split cleanly and evenly;
+     *  a LinkedList always splits poorly;
+     *  and hash-based and tree-based sets can generally be split reasonably well
+     */
+    public static void tryOutTreeSet(String[] args) {
+        TreeSet<String> ts = new TreeSet<>(Set.of("", "s"));
+        String[] sortedAWords = ts.stream()
+                .filter(s -> s.startsWith("a"))
+                .sorted() // no-op
+                .toArray(String[]::new);
+    }
+
+    private static int solutionToCutShortTheNumber(int num) {
+        return (int) IntStream.iterate(num, i -> i > 0, i -> i % 2 == 0 ? i / 2 : i - 1).count();
+    }
+
+    private static IntStream listToIntStream(List<Integer> list) {
+        return list.stream().flatMapToInt(IntStream::of);
+    }
+
+    private static void reverseSortAPrimitiveArray(int[] arr2) {
+        // careful about boundary values
+        int[] sortedArray = Arrays.stream(arr2)
+                .map(i -> -i).sorted().map(i -> -i) // just use 'sorted()' for ascending order
+                .toArray();
+        // safer way to sort
+        int[] safeSortedArray = Arrays.stream(arr2)
+                .boxed()
+                .sorted(Comparator.reverseOrder()) // use 'naturalOrder' for ascending order
+                .mapToInt(Integer::intValue)
+                .toArray();
+        Arrays.sort(arr2);
+    }
+
+    // finding out an implementation of step average on infinite stream
+    // https://stackoverflow.com/questions/67405898/given-an-infinite-sequence
+    static Stream<Double> stepAverage(Stream<Double> stream, int step) {
+        return Streams.mapWithIndex(stream, (from, index) -> Map.entry(index, from))
+                .collect(Collectors.groupingBy(e -> (e.getKey() / step), TreeMap::new,
+                        Collectors.averagingDouble(Map.Entry::getValue)))
+                .values().stream();
+    }
+
     private List<Stake> filteredStakeForDistinctCustomer(List<Stake> stakes, int maxBetOfferId) {
         return stakes.stream()
                 .filter(s -> s.betOfferI() == maxBetOfferId) // maxProductOfNonOverlappingPallindromes betOfferId
@@ -512,28 +791,6 @@ public class StreamsUtility {
         return orders.stream()
                 .collect(Collectors.groupingBy(Order::customerName,
                         Collectors.flatMapping(order -> order.lineItems().stream(), Collectors.toSet())));
-    }
-
-
-    public class SimpleKeySupplier implements Supplier<String> {
-        private final String keyPrefix;
-        private final int numToGenerate;
-        private int numGenerated;
-
-        public SimpleKeySupplier(String keyPrefix, int numRecs) {
-            this.keyPrefix = keyPrefix;
-            numToGenerate = numRecs;
-            numGenerated = 0;
-        }
-
-        @Override
-        public String get() {
-            if (numGenerated >= numToGenerate) {
-                return null;
-            } else {
-                return (keyPrefix + numGenerated++);
-            }
-        }
     }
 
     private void consumeObjectsProvidedBySupplier() {
@@ -563,7 +820,605 @@ public class StreamsUtility {
                                 minPrice.getOrDefault(priceGroup.getPriceName(), 10000000)));
     }
 
+    public void dropWhileVersusTakeWhile() {
+        Stream.of("a", "b", "c", "de", "f", "g", "h")
+                .peek(System.out::println)
+                .takeWhile(s -> s.length() <= 1)
+                .collect(Collectors.toList()).forEach(System.out::println);
+
+        Stream.of("a", "b", "c", "de", "f", "g", "h")
+                .peek(s -> System.out.print(s + ", "))
+                .dropWhile(s -> s.length() <= 1)
+                .collect(Collectors.toList()).forEach(System.out::println);
+
+        Stream.of("a", "b", "c", "de", "f", "g", "h")
+                .dropWhile(s -> {
+                    System.out.println("dropWhile: " + s);
+                    return s.length() <= 1;
+                })
+                .peek(s -> System.out.println("collecting " + s))
+                .collect(Collectors.toList()).forEach(System.out::println);
+    }
+
+    // pattern to simplify code using Predicate
+    int totalValues(List<Integer> numbers) {
+        int total = 0;
+        for (int e : numbers) {
+            total += e;
+        }
+        return total;
+    }
+
+    int totalEvenValues(List<Integer> numbers) {
+        int total = 0;
+        for (int e : numbers) {
+            if (e % 2 == 0) total += e;
+        }
+        return total;
+    }
+
+    int totalOddValues(List<Integer> numbers) {
+        int total = 0;
+        for (int e : numbers) {
+            if (e % 2 != 0) total += e;
+        }
+        return total;
+    }
+
+    // use of predicate could simplify all these use cases into a common method
+    // the strategy pattern is simplified further by using lambdas, this is covered in a video
+    // at https://www.youtube.com/watch?v=WN9kgdSVhDo&t=982s&ab_channel=Devoxx
+    int totalValues(List<Integer> numbers, Predicate<Integer> selector) {
+        return numbers.stream()
+                .mapToInt(e -> e)
+                .filter(selector::test)
+                .sum();
+    }
+
+    // optimised
+    int optimisedTotalValues(Collection<Integer> numbers, Predicate<Integer> selector) {
+        return numbers.stream()
+                .filter(selector)
+                .reduce(0, Integer::sum);
+    }
+
+    // a new API introduced since Java-11 to transform patterns into matching predicates
+    public void asMatchPredicateWithPatterns() {
+        var languages = List.of("c#", "java", "python", "scala");
+        var p = Pattern.compile("[a-z]{4}");
+
+        for (String lang : languages) {
+            if (p.matcher(lang).matches()) {
+                System.out.println(lang);
+            }
+        }
+
+        languages.stream()
+                .filter(s -> p.matcher(s).matches())
+                .forEach(System.out::println);
+
+        languages.stream()
+                .filter(Predicate.not(p.asMatchPredicate())) //here
+                .forEach(System.out::println);
+    }
+
+    public void collectorInference() {
+        List<BlogPost> posts = new ArrayList<>();
+        Function<? super BlogPost, ? extends BlogPostType> classifier = BlogPost::getType;
+        Map<BlogPostType, List<BlogPost>> postsPerType = posts.stream()
+                .collect(groupingBy(classifier));
+    }
+
+    public void collectAtOnceUsingStreamConcat() throws ParseException {
+        Info info1 = new Info(1L, getDateFromStr("2018-02-02T10:00:00"), 3L);
+        Info info2 = new Info(2L, getDateFromStr("2018-02-02T12:00:00"), 3L);
+        Info info3 = new Info(3L, getDateFromStr("2018-02-05T12:00:00"), 6L);
+        Info info4 = new Info(4L, getDateFromStr("2018-02-05T10:00:00"), 6L);
+        List<Info> listInfo = List.of(info1, info2, info3, info4);
+        Date date = getDateFromStr("2018-02-03T10:10:10");
+
+
+        BiFunction<Info, Info, Info> remapping = (i1, i2) -> i1.date().getTime() > i2.date().getTime() ? i1 : i2;
+        // filter 1: less date - group by maxProductOfNonOverlappingPallindromes date by groupId
+        Map<Long, Info> map = new HashMap<>();
+        List<Info> listMoreByDate = new ArrayList<>();
+        for (Info info : listInfo) {
+            if (info.date().getTime() < date.getTime()) {
+                map.merge(info.groupId(), info, remapping);
+            } else {
+                listMoreByDate.add(info);
+            }
+        }
+        List<Info> listResult = new ArrayList<>(map.values());
+        listResult.addAll(listMoreByDate);
+
+
+        // holger solved it
+        List<Info> listResult2 = Stream.concat(
+                        listInfo.stream()
+                                .filter(info -> info.date().getTime() < date.getTime())
+                                .collect(toMap(Info::groupId, Function.identity(),
+                                        BinaryOperator.maxBy(Comparator.comparing(Info::date))))
+                                .values().stream(),
+                        listInfo.stream()
+                                .filter(info -> info.date().getTime() >= date.getTime()))
+                .collect(Collectors.toList());
+
+        System.out.println("result: " + listResult);
+    }
+
+    public void collectorToUnmodifiableList() {
+        var result = Stream.of(1, 2, 3, 4, null, 5)
+                .collect(Collectors.collectingAndThen(Collectors.toList(),
+                        Collections::unmodifiableList));
+        System.out.println(result);
+
+        var result2 = Stream.of(1, 2, 3, 4)
+                .collect(Collectors.toUnmodifiableList());
+        System.out.println(result2);
+    }
+
+    //
+    public long compareCharacterDifferencesBetweenStrings(String str1, String str2) {
+        return IntStream.range(0, str1.length())
+                .filter(i -> str1.charAt(i) != str2.charAt(i))
+                .count();
+    }
+
+    // composite predicates
+    // https://stackoverflow.com/questions/24553761/how-to-apply-multiple-predicates-to-a-java-util-stream
+    public void compositePredicates() {
+        Stream<Integer> stream = Stream.of(5, 7, 9, 11, 13, 14, 21, 28, 35, 42, 49, 56, 63, 70, 71);
+        IntPredicate p0 = n -> n > 10;
+        IntPredicate p1 = n -> n % 2 != 0;
+        IntPredicate p2 = StreamsUtility::isPrime;
+        System.out.println(matchAll(stream, p0, p1, p2));
+        // should get [11, 13, 71]
+    }
+
+    private List<Integer> matchAll(Stream<Integer> input, IntPredicate... conditions) {
+        IntPredicate compositePredicate =
+                Arrays.stream(conditions)
+                        .reduce(IntPredicate::and)
+                        .orElse(p -> true);
+        return input.mapToInt(i -> i)
+                .filter(compositePredicate)
+                .boxed()
+                .collect(Collectors.toList());
+    }
+
+    private <T> Predicate<T> matchAll(Predicate<T>... conditions) {
+        return Arrays.stream(conditions)
+                .reduce(Predicate::and)
+                .orElse(p -> true);
+    }
+
+    // detailed in https://stackoverflow.com/questions/59154995/cleaning-a-list-of-data-in-java8/59156527#59156527
+    public <T> List<T> cleanDataInPlaceWithMappingFunction(List<T> data, List<Function<T, T>> cleanOps) {
+        return data.stream().map((str) -> {
+            T cleanData = str;
+            for (Function<T, T> function : cleanOps) {
+                cleanData = function.apply(cleanData);
+            }
+            return cleanData;
+        }).collect(Collectors.toList());
+    }
+
+    public <T> List<T> cleanDataByHolger(List<T> data, List<Function<T, T>> cleanOps) {
+        cleanOps.stream()
+                .reduce(Function::andThen)
+                .ifPresent(f -> data.replaceAll(f::apply));
+        return data;
+    }
+
+    public <T> List<T> cleanDataByHolgerOptimised(List<T> data, List<UnaryOperator<T>> cleanOps) {
+        cleanOps.stream()
+                .reduce((f1, f2) -> t -> f2.apply(f1.apply(t)))
+                .ifPresent(data::replaceAll);
+        return data;
+    }
+
+    //
+    List<String> generatingRandomListOfWords() {
+        int listSize = 10;
+        int maxWordSize = 10;
+        int[] letters = IntStream.range('A', 'Z').toArray();
+        return IntStream.range(0, listSize)
+                .mapToObj(ix -> ThreadLocalRandom.current()
+                        .ints(ThreadLocalRandom.current().nextInt(1, maxWordSize), 0, letters.length)
+                        .map(i -> letters[i])
+                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                        .toString())
+                .collect(Collectors.toList());
+    }
+
+    // collect to a treemap or a sorted map while using streams
+    public SortedMap<String, Long> skill_nApplicants(Map<String, Skill> skillMap) {
+        return skillMap.values().stream()
+                .collect(Collectors.toMap(Skill::name, Skill::numApplicants,
+                        (a, b) -> a, TreeMap::new));
+    }
+
+    // using multiple mappers to joining the output as a string from one object with varied attributes
+    public String extractSimilarAttributesFromEntityToCombinedString(SomeClass shipment) {
+        return Optional.ofNullable(shipment)
+                .map(SomeClass::bill)
+                .map(bill -> extractAttributes(bill, Bill::numberString, Bill::prefixString))
+                .orElse(null);
+    }
+
+    @SafeVarargs
+    private String extractAttributes(Bill entity, Function<Bill, String>... mappers) {
+        List<String> attributes = Arrays.stream(mappers)
+                .map(function -> function.apply(entity))
+                .collect(Collectors.toList());
+        return attributes.stream().anyMatch(s -> s == null || s.isEmpty()) ?
+                null : String.join("-", attributes);
+    }
+
+    <T> Stream<T> flatMapTwoDimensionalArray(T[][] array) {
+        return Arrays.stream(array).flatMap(Arrays::stream);
+    }
+
+    Stream<Integer> flatMapTwoDimensionalArray(int[][] array) {
+        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
+    }
+
+    Stream<Double> flatMapTwoDimensionalArray(double[][] array) {
+        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
+    }
+
+    Stream<Long> flatMapTwoDimensionalArray(long[][] array) {
+        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
+    }
+
+    public void groupingAndFilteringToCount(Collection<Coordinate> myList) {
+        Map<String, Long> r = myList.stream()
+                .collect(Collectors.groupingBy(Coordinate::x))
+                .entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> e.getValue().stream()
+                                .filter(distinctByKey(Coordinate::y)).count()));
+
+        Map<String, Integer> res = myList.stream()
+                .collect(Collectors.groupingBy(Coordinate::x,
+                        Collectors.mapping(Coordinate::y,
+                                Collectors.collectingAndThen(Collectors.toSet(), Set::size))));
+
+        // filtering as downstream considers the keys with value as 0
+        Map<String, Long> result1 = myList.stream()
+                .collect(Collectors.groupingBy(Coordinate::x,
+                        Collectors.filtering(distinctByKey(Coordinate::y),
+                                Collectors.counting())));
+
+        // groupingBy as a downstream on the other hand doesn't result in values with 0 count once filtered
+        Map<String, Long> result2 = myList.stream()
+                .collect(Collectors.filtering(distinctByKey(Coordinate::y),
+                        Collectors.groupingBy(Coordinate::x, Collectors.counting())));
+
+        Map<String, Long> result3 = myList.stream()
+                .filter(distinctByKey(Coordinate::x))
+                .collect(Collectors.groupingBy(Coordinate::x, Collectors.counting()));
+    }
+
+    // constructing a hashmap from a string e.g "t12345-g1234-o1234", this was stated
+    // at https://stackoverflow.com/questions/52137069/hashmap-using-streams-and-substring
+    public Map<String, String> constructHashMapUsingSubstringsFromAString(String lines) {
+        return Arrays.stream(lines.split("-"))
+                .collect(Collectors.toMap(s -> s.substring(0, 1), s -> s.substring(1)));
+    }
+
+    private Candidate highestMarkUniqueCandidate(List<Candidate> studentList) {
+        TreeMap<Integer, List<Candidate>> map = studentList.stream()
+                .collect(Collectors.groupingBy(Candidate::marks, TreeMap::new,
+                        Collectors.mapping(e -> e, Collectors.toList())));
+        if (map.firstEntry().equals(map.lastEntry())) {
+            return null;
+        }
+        List<Candidate> highestMarkStudents = map.lastEntry().getValue();
+        return highestMarkStudents.size() == 1 ? highestMarkStudents.get(0) : null;
+    }
+
+    // Modified version of an answer to https://stackoverflow.com/questions/53307682/how-to-interleave-merge-two-java-8-streams
+    public <T> Stream<T> interleaveStreams(Stream<? extends T> a, Stream<? extends T> b) {
+        Spliterator<? extends T> spA = a.spliterator();
+        Spliterator<? extends T> spB = b.spliterator();
+        long s = spA.estimateSize() + spB.estimateSize();
+        if (s < 0) s = Long.MAX_VALUE;
+        int ch = spA.characteristics() & spB.characteristics()
+                & (Spliterator.NONNULL | Spliterator.SIZED);
+        ch |= Spliterator.ORDERED;
+
+        return StreamSupport.stream(new Spliterators.AbstractSpliterator<>(s, ch) {
+            Spliterator<? extends T> sp1 = spA;
+            Spliterator<? extends T> sp2 = spB;
+
+            @Override
+            public boolean tryAdvance(Consumer<? super T> action) {
+                Spliterator<? extends T> sp = sp1;
+                if (sp.tryAdvance(action)) {
+                    sp1 = sp2;
+                    sp2 = sp;
+                    return true;
+                }
+                return sp2.tryAdvance(action);
+            }
+        }, false);
+    }
+
+    //
+    public void streamOfNullable() {
+        long one = Stream.ofNullable("42").count();
+        long zero = Stream.ofNullable(null).count();
+        System.out.println(one);
+        System.out.println(zero);
+    }
+
+    //
+    public void streamFromOptional() {
+        Optional<Integer> a = Optional.empty();
+        Optional<Integer> b = null;
+        Optional<Integer> aOrB = a.or(() -> b);
+
+
+        Optional<String> optional = null;
+        if (optional != null) {
+            // execute either println or ()
+            optional.ifPresentOrElse(System.out::println, () -> {
+                System.out.println();
+            });
+        }
+
+        // return either optional or supplier
+        optional.or(StreamsUtility::supplier);
+
+
+        // stream of optional
+        Stream<Optional<Integer>> so = Stream.empty();
+        Stream<Integer> s = so.flatMap(Optional::stream);
+        Optional<Stream<Integer>> os = Optional.of(s);
+    }
+
+    //
+    public void iterateStream() {
+        Stream.iterate(1, i -> 2 * i).forEach(System.out::println);
+
+        Stream.iterate(1, i -> i <= 10, i -> 2 * i)
+                .forEach(System.out::println);
+    }
+
+    // flatMapping two dimensional arrays of various types
+
+    // spliterators are the way to perform anaotmy on the streams operations
+    public void parallelSpliteratorCharacteristics() {
+        System.out.println(Stream.of(1L, 2L, 3L).spliterator().characteristics()); //
+        System.out.println(Stream.of(1L, 2L, 3L).limit(2).spliterator().characteristics());  // ORDERED
+        System.out.println(Stream.of(1L, 2L, 3L).limit(2).parallel().spliterator().characteristics()); // SUBSIZED, ORDERED, SIZED
+        Spliterator spliterator = Stream.of(1L, 2L, 3L).limit(2).spliterator();
+        Stream stream = StreamSupport.stream(spliterator, true);
+        System.out.println(spliterator.characteristics()); // ORDERED
+        System.out.println(stream.spliterator().characteristics()); // ORDERED
+    }
+
+    public void flatMappingWithCollectorWhileReducing() {
+        List<Skills> skillSet1 = List.of(new Skills("Skill-1"), new Skills("Skill-2"), new Skills("Skill-3"));
+        List<Skills> skillSet2 = List.of(new Skills("Skill-1"), new Skills("Skill-4"), new Skills("Skill-2"));
+        List<Skills> skillSet3 = List.of(new Skills("Skill-1"), new Skills("Skill-9"), new Skills("Skill-2"));
+        List<WorkExperience> workExperienceList = List.of(new WorkExperience(2017, skillSet1),
+                new WorkExperience(2017, skillSet2), new WorkExperience(2018, skillSet3));
+
+        Map<Integer, Set<List<Skills>>> collectJ8 = workExperienceList.stream()
+                .collect(Collectors.groupingBy(WorkExperience::year,
+                        Collectors.mapping(WorkExperience::skill, Collectors.toSet())));
+        System.out.println(collectJ8);
+
+        Map<Integer, Set<Skills>> collectJ9 = workExperienceList.stream()
+                .collect(Collectors.groupingBy(WorkExperience::year,
+                        Collectors.flatMapping(workExp -> workExp.skill().stream(),
+                                Collectors.toSet())));
+        System.out.println(collectJ9);
+
+        Map<Integer, Set<Skills>> toMap = workExperienceList.stream()
+                .collect(Collectors.toMap(WorkExperience::year, we -> new HashSet<>(we.skill()),
+                        (s1, s2) -> {
+                            s1.addAll(s2);
+                            return s1;
+                        }));
+        System.out.println(toMap);
+
+        Map<Integer, Set<Skills>> optimizedMap = workExperienceList.stream()
+                .collect(Collectors.toMap(
+                        WorkExperience::year,
+                        we -> new HashSet<>(we.skill()),
+                        StreamsUtility::mergeSkills));
+        System.out.println(optimizedMap);
+    }
+
+    //
+    public void patternSplitAsStream() {
+        String starWars = "Luke Darthor Obimain QuiGoin Palpatine";
+        Function<String, Stream<String>> lineSplitter = l -> Pattern.compile(" ").splitAsStream(l);
+        Stream.of(starWars)
+                .flatMap(lineSplitter)
+                .sorted((Comparator.reverseOrder()))
+                .forEachOrdered(System.out::println);
+    }
+
+    // peek is not invoked anymore based on the terminal operations
+    // the issue is discussed in details at https://stackoverflow.com/questions/48221783
+    public void peekNotInvokedWhileCountingTheStream() {
+        List<Integer> values = Arrays.asList(1, 2, 3);
+        values.stream()
+                .map(n -> n * 2)
+                .peek(System.out::print)
+                .count();
+    }
+
+    // the utility is to derive a way to search words within comments
+    // the requirement was posed on https://stackoverflow.com/questions/60443274/
+    void searchWordsInComments(List<String> elements, List<String> listOfComments) {
+        Set<String> lowerCaseSet = elements.stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        Map<String, Long> output = listOfComments.stream()
+                .flatMap(e -> Arrays.stream(e.replace(".", "")
+                                .split(" "))
+                        .map(String::toLowerCase))
+                .filter(lowerCaseSet::contains)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry<String, Long>::getValue).reversed().thenComparing(Map.Entry::getKey))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+
+        System.out.println(output);
+
+        Function<String, Map.Entry<String, Long>> function = f -> Map.entry(f, listOfComments.stream()
+                .filter(e -> e.toLowerCase().contains(f.toLowerCase())).count());
+
+        elements.stream()
+                .map(function)
+                .sorted(Comparator.comparing(Map.Entry<String, Long>::getValue)
+                        .reversed().thenComparing(Map.Entry::getKey))
+                .forEach(System.out::println);
+    }
+
+    void searchWordsInCommentsByHolger(List<String> elements, List<String> listOfComments) {
+        Map<String, Predicate<String>> filters = elements.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .map(s -> Pattern.compile(s, Pattern.LITERAL | Pattern.CASE_INSENSITIVE))
+                .collect(Collectors.toMap(Pattern::pattern, Pattern::asPredicate,
+                        (a, b) -> {
+                            throw new AssertionError("duplicates");
+                        }, LinkedHashMap::new));
+
+        filters.entrySet().stream()
+                .map(e -> Map.entry(e.getKey(), listOfComments.stream().filter(e.getValue()).count()))
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEachOrdered(e -> System.out.printf("%-7s%3d%n", e.getKey(), e.getValue()));
+    }
+
+    // generic approach to solving similar aggregate operations on various fields
+    private Nutrients nutrientsCalculator(List<FoodNutritional> responseBody) {
+        Supplier<Stream<FoodNutritional>> foodNutritionalSupplier = responseBody::stream;
+        return new Nutrients(
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalCarbohydrate),
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getProtein),
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalFat),
+                sumNutrition(foodNutritionalSupplier, FoodNutritional::getDietaryFiber));
+    }
+
+    private Double sumNutrition(Supplier<Stream<FoodNutritional>> foodNutritionalSupplier,
+                                ToDoubleFunction<FoodNutritional> nutritionTypeFunction) {
+        return foodNutritionalSupplier.get().mapToDouble(nutritionTypeFunction).sum();
+    }
+
+    //
+    Integer[] sortArrayWithEvensIntact(Integer[] array) {
+        Map<Boolean, Map<Integer, Integer>> evenOdds = IntStream.range(0, array.length)
+                .boxed()
+                .collect(Collectors.partitioningBy(i -> array[i] % 2 == 0,
+                        Collectors.toMap(o -> o, i -> array[i])));
+
+        Map<Integer, Integer> oddSorted = remapWithSorting(evenOdds.get(Boolean.FALSE));
+
+        Map<Integer, Integer> overall = new HashMap<>(evenOdds.get(Boolean.TRUE));
+        overall.putAll(oddSorted);
+
+        return overall.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toArray(Integer[]::new);
+    }
+
+    Map<Integer, Integer> remapWithSorting(Map<Integer, Integer> initialIndexMapping) {
+        List<Integer> oddIndexes = new ArrayList<>(initialIndexMapping.keySet());
+        List<Integer> sortedOdds = initialIndexMapping.values().stream()
+                .sorted().collect(Collectors.toList());
+        return IntStream.range(0, sortedOdds.size())
+                .boxed()
+                .collect(Collectors.toMap(oddIndexes::get, sortedOdds::get));
+    }
+
+    public void splitMultipleTypeSubLists() {
+        List<Object> input = List.of(true, 1, 2L, "asdf", Map.of("a", "b"),
+                BigInteger.valueOf(23456), Map.of(3, 4), List.of("x", "y", "z"), false, 17, 'q');
+
+        Map<Integer, List<Object>> result =
+                input.stream().collect(Collectors.groupingBy(StreamsUtility::grouper));
+
+        result.forEach((k, v) -> System.out.println(k + " => " + v));
+    }
+
+    //
+    void spliteratorBehaviourToCloseStreams() {
+        Stream<String> stream = Stream.of("a", "b", "c");
+        Spliterator<String> spliterator = stream.spliterator();
+        // Some low lever operation with the spliterator
+        stream.close(); // do we need to close?
+
+        Stream<String> stream2 = Stream.of("a", "b", "c").limit(2);
+        Spliterator<String> spliterator2 = stream2.spliterator();
+        stream.close();
+        // Some low lever operation with the spliterator
+    }
+
+    private IntStream reverseSort(int from, int to) {
+        return IntStream.range(from, to)
+                .filter(x -> x % 2 != 0)
+                .sorted().map(i -> to - i + from - 1);
+    }
+
+    private boolean isPrimeJava9(int n) {
+        return IntStream.iterate(2, i -> i * i <= n, i -> i + 1)
+                .noneMatch(i -> n % i == 0);
+    }
+
+    /**
+     * https://stackoverflow.com/questions/65567231/
+     * Response from Holger in comments over the difference https://stackoverflow.com/questions/49760818
+     *
+     * @Holger any thoughts around, why would the API note and the implementation for the Collection#toArray(java.util.function.IntFunction)
+     * and Stream#toArray(java.util.function.IntFunction) differ? e.g. var collectionToArray = list.toArray(value -> new Integer[]{0}); would succeed
+     * while var streamToArray = list.stream().toArray(value -> new Integer[]{0}); would fail with a similar error as stated by the OP.
+     * I couldn't really convince myself on the contradictory behaviour of the APIs. (shouldn't the consistency matter while designing?)
+     * @Naman Stream.toArray(IntFunction) is a genuine Stream operation. In contrast,
+     * Collection.toArray(IntFunction) has been added in JDK 11, so the default implementation had to work atop
+     * the existing interface methods, so it’s just implemented as return toArray(generator.apply(0));
+     * and the contract of the method it delegates to, is to accept an array of arbitrary size,
+     * creating and returning a new one if it is too small. – Holger yesterday
+     * @Holger the implementation was kind of clear to me, the introduction of API on an existing interface,
+     * used as a bridge and hence making use of the existing method. I believe the underlying question that
+     * I might have failed to pose was that why do we need such strict validatios(begin size, accept size, end size, etc)
+     * within streams converted to an array and not be as lenient as we are while performing a collection to an array?
+     * Is it to deal with concurrency?
+     * @Naman “being lenient” is not a good thing, it’s a source of errors. But it’s not possible to change the contract of toArray(A[]).
+     * For Collection.toArray(IntFunction) that is only used for creating the zero-sized array and
+     * typically used with Type[]::new, such a check would not very useful.
+     * In contrast, the Stream.toArray may use the IntFunction to create the final result array (when the size is known in advance).
+     */
+    void collectionToArrayVersusStreamToArray() {
+        var list = Arrays.asList(1, 2, 3);
+        var collectionToArray = list.toArray(value -> new Integer[]{0});
+        var streamToArray = list.stream().toArray(value -> new Integer[]{0}); // fails with exception
+    }
+
+    public void streamToListVsCollectorToList() {
+        final List<FancyDodo> fancyDodos = Stream.of(new FancyDodo()).toList();
+        final List<Dodo> againFancyDodos = Arrays.asList(Stream.of(new FancyDodo())
+                .toArray(Dodo[]::new));
+        final List<Dodo> dodos = Stream.of(new FancyDodo())
+                .collect(Collectors.toList());
+        // support the type
+        final List<Dodo> noFancyDodos = Stream.<Dodo>of(new FancyDodo()).toList();
+    }
+
     public enum Country {POLAND, UK, GERMANY}
+
+    // stream's toList would not be able to return the parent type list
+    // https://stackoverflow.com/questions/67517262/why-cant-i-use-streamtolist-to-collect-a-list-of-a-class-interface
+    private interface Dodo {
+    }
 
     record EmployeeContract(Long id, Date date) {
     }
@@ -609,68 +1464,6 @@ public class StreamsUtility {
     }
 
     record Node(int degree) {
-    }
-
-    public class PriceGroup {
-        String priceName;
-        String priceGroup;
-
-        public String getPriceName() {
-            return priceName;
-        }
-
-        public String getPriceGroup() {
-            return priceGroup;
-        }
-    }
-
-
-    public class Price {
-        String priceName;
-        Integer price;
-
-        public String getPriceName() {
-            return priceName;
-        }
-
-        public Integer getPrice() {
-            return price;
-        }
-    }
-
-    public void dropWhileVersusTakeWhile() {
-        Stream.of("a", "b", "c", "de", "f", "g", "h")
-                .peek(System.out::println)
-                .takeWhile(s -> s.length() <= 1)
-                .collect(Collectors.toList()).forEach(System.out::println);
-
-        Stream.of("a", "b", "c", "de", "f", "g", "h")
-                .peek(s -> System.out.print(s + ", "))
-                .dropWhile(s -> s.length() <= 1)
-                .collect(Collectors.toList()).forEach(System.out::println);
-
-        Stream.of("a", "b", "c", "de", "f", "g", "h")
-                .dropWhile(s -> {
-                    System.out.println("dropWhile: " + s);
-                    return s.length() <= 1;
-                })
-                .peek(s -> System.out.println("collecting " + s))
-                .collect(Collectors.toList()).forEach(System.out::println);
-    }
-
-    public static void groupByAndSort(String[] args) {
-        List<String> items = Arrays.asList("apple", "apple", "banana", "apple", "orange", "banana", "papaya");
-
-        // 1.1== >Group by a List and display the total count of it
-        Map<String, Long> result =
-                items.stream().sorted().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        System.out.println("RESULT : " + result);
-
-        // 1.2 Add sorting
-        Map<String, Long> finalMap = new LinkedHashMap<>();
-        result.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .forEachOrdered(e -> finalMap.put(e.getKey(), e.getValue()));
-        System.out.println("FINAL RESULT : " + finalMap);
     }
 
     /**
@@ -747,104 +1540,6 @@ public class StreamsUtility {
         }
     }
 
-    // pattern to simplify code using Predicate
-    int totalValues(List<Integer> numbers) {
-        int total = 0;
-        for (int e : numbers) {
-            total += e;
-        }
-        return total;
-    }
-
-    int totalEvenValues(List<Integer> numbers) {
-        int total = 0;
-        for (int e : numbers) {
-            if (e % 2 == 0) total += e;
-        }
-        return total;
-    }
-
-    int totalOddValues(List<Integer> numbers) {
-        int total = 0;
-        for (int e : numbers) {
-            if (e % 2 != 0) total += e;
-        }
-        return total;
-    }
-
-
-    // use of predicate could simplify all these use cases into a common method
-    // the strategy pattern is simplified further by using lambdas, this is covered in a video
-    // at https://www.youtube.com/watch?v=WN9kgdSVhDo&t=982s&ab_channel=Devoxx
-    int totalValues(List<Integer> numbers, Predicate<Integer> selector) {
-        return numbers.stream()
-                .mapToInt(e -> e)
-                .filter(selector::test)
-                .sum();
-    }
-
-    // optimised
-    int optimisedTotalValues(Collection<Integer> numbers, Predicate<Integer> selector) {
-        return numbers.stream()
-                .filter(selector)
-                .reduce(0, Integer::sum);
-    }
-
-
-    // a new API introduced since Java-11 to transform patterns into matching predicates
-    public void asMatchPredicateWithPatterns() {
-        var languages = List.of("c#", "java", "python", "scala");
-        var p = Pattern.compile("[a-z]{4}");
-
-        for (String lang : languages) {
-            if (p.matcher(lang).matches()) {
-                System.out.println(lang);
-            }
-        }
-
-        languages.stream()
-                .filter(s -> p.matcher(s).matches())
-                .forEach(System.out::println);
-
-        languages.stream()
-                .filter(Predicate.not(p.asMatchPredicate())) //here
-                .forEach(System.out::println);
-    }
-
-    private static List<User> userListWithSameEmailAndMergeLists(List<User> users) {
-        return new ArrayList<>(users.stream()
-                .collect(Collectors.toMap(User::email, Function.identity(), (user1, user2) -> {
-                    List<Integer> l1 = user1.lists();
-                    List<Integer> l2 = user2.lists();
-                    List<Integer> merge = IntStream.range(0, l1.size())
-                            .mapToObj(i -> (l1.get(i) == 0 && l2.get(i) == 0) ? 0 : 1)
-                            .collect(Collectors.toList());
-                    return new User(user1.email(), merge);
-                })).values());
-    }
-
-    private static Map<Integer, List<Integer>> collectGroupingByAndMapping(List<ProductCatalogue> productCatalogueList) {
-        return productCatalogueList.stream()
-                .collect(Collectors.groupingBy(ProductCatalogue::pId,
-                        Collectors.mapping(ProductCatalogue::cId, Collectors.toList())));
-
-    }
-
-    private static List<Stake> stakesHighestPerCustomerForParticularStakeLimited(List<Stake> stakes, int maxBetOfferId) {
-        return stakes.stream()
-                .filter(x -> x.betOfferI() == maxBetOfferId) // retains only objects where their offer is if equal to the supplied offerId
-                .collect(toMap(Stake::customerId,    // customer ids do not repeat as you've mentioned.
-                        Function.identity(),
-                        BinaryOperator.maxBy(Comparator.comparingInt(Stake::stake))))  //   gets the highest stake values customer wise.
-                .values()
-                .stream()
-                .collect(groupingBy(Stake::stake)) // particular stake
-                .values()
-                .stream()
-                .flatMap(x -> x.stream().limit(20)) //  and limited to 20 customers for a particular stake.
-                .collect(Collectors.toList());
-    }
-
     record User(String name, String id, String email, List<Integer> lists, int age) {
         User(String email, List<Integer> lists) {
             this(null, null, email, lists, 0);
@@ -852,13 +1547,6 @@ public class StreamsUtility {
     }
 
     record ProductCatalogue(Integer pId, Integer cId) {
-    }
-
-    public void collectorInference() {
-        List<BlogPost> posts = new ArrayList<>();
-        Function<? super BlogPost, ? extends BlogPostType> classifier = BlogPost::getType;
-        Map<BlogPostType, List<BlogPost>> postsPerType = posts.stream()
-                .collect(groupingBy(classifier));
     }
 
     private static class BlogPostType {
@@ -872,76 +1560,7 @@ public class StreamsUtility {
         }
     }
 
-    public void collectAtOnceUsingStreamConcat() throws ParseException {
-        Info info1 = new Info(1L, getDateFromStr("2018-02-02T10:00:00"), 3L);
-        Info info2 = new Info(2L, getDateFromStr("2018-02-02T12:00:00"), 3L);
-        Info info3 = new Info(3L, getDateFromStr("2018-02-05T12:00:00"), 6L);
-        Info info4 = new Info(4L, getDateFromStr("2018-02-05T10:00:00"), 6L);
-        List<Info> listInfo = List.of(info1, info2, info3, info4);
-        Date date = getDateFromStr("2018-02-03T10:10:10");
-
-
-        BiFunction<Info, Info, Info> remapping = (i1, i2) -> i1.date().getTime() > i2.date().getTime() ? i1 : i2;
-        // filter 1: less date - group by maxProductOfNonOverlappingPallindromes date by groupId
-        Map<Long, Info> map = new HashMap<>();
-        List<Info> listMoreByDate = new ArrayList<>();
-        for (Info info : listInfo) {
-            if (info.date().getTime() < date.getTime()) {
-                map.merge(info.groupId(), info, remapping);
-            } else {
-                listMoreByDate.add(info);
-            }
-        }
-        List<Info> listResult = new ArrayList<>(map.values());
-        listResult.addAll(listMoreByDate);
-
-
-        // holger solved it
-        List<Info> listResult2 = Stream.concat(
-                listInfo.stream()
-                        .filter(info -> info.date().getTime() < date.getTime())
-                        .collect(toMap(Info::groupId, Function.identity(),
-                                BinaryOperator.maxBy(Comparator.comparing(Info::date))))
-                        .values().stream(),
-                listInfo.stream()
-                        .filter(info -> info.date().getTime() >= date.getTime()))
-                .collect(Collectors.toList());
-
-        System.out.println("result: " + listResult);
-    }
-
-    private static Date getDateFromStr(String dateStr) throws ParseException {
-        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(dateStr);
-    }
-
     private record Info(Long id, Date date, Long groupId) {
-    }
-
-    public void collectorToUnmodifiableList() {
-        var result = Stream.of(1, 2, 3, 4, null, 5)
-                .collect(Collectors.collectingAndThen(Collectors.toList(),
-                        Collections::unmodifiableList));
-        System.out.println(result);
-
-        var result2 = Stream.of(1, 2, 3, 4)
-                .collect(Collectors.toUnmodifiableList());
-        System.out.println(result2);
-    }
-
-    //
-    public long compareCharacterDifferencesBetweenStrings(String str1, String str2) {
-        return IntStream.range(0, str1.length())
-                .filter(i -> str1.charAt(i) != str2.charAt(i))
-                .count();
-    }
-
-    // common use case for grouping
-    public static void groupByStartAndEndDateToMerge() {
-        List<ReleaseTime> ungroupedAvailability = List.of();
-        Collection<ReleaseTime> mergedRegionsCollection = ungroupedAvailability.stream()
-                .collect(Collectors.toMap(t -> Arrays.asList(t.startDate(), t.endDate()),
-                        Function.identity(), ReleaseTime::mergeRegions))
-                .values();
     }
 
     record ReleaseTime(Date startDate, Date endDate, List<String> regions) {
@@ -953,140 +1572,7 @@ public class StreamsUtility {
         }
     }
 
-
-    // composite predicates
-    // https://stackoverflow.com/questions/24553761/how-to-apply-multiple-predicates-to-a-java-util-stream
-    public void compositePredicates() {
-        Stream<Integer> stream = Stream.of(5, 7, 9, 11, 13, 14, 21, 28, 35, 42, 49, 56, 63, 70, 71);
-        IntPredicate p0 = n -> n > 10;
-        IntPredicate p1 = n -> n % 2 != 0;
-        IntPredicate p2 = StreamsUtility::isPrime;
-        System.out.println(matchAll(stream, p0, p1, p2));
-        // should get [11, 13, 71]
-    }
-
-    private static boolean isPrime(Integer n) {
-        return IntStream.range(2, n) // note  division by zero possible in your attempt
-                .noneMatch(i -> n % i == 0);
-    }
-
-    private List<Integer> matchAll(Stream<Integer> input, IntPredicate... conditions) {
-        IntPredicate compositePredicate =
-                Arrays.stream(conditions)
-                        .reduce(IntPredicate::and)
-                        .orElse(p -> true);
-        return input.mapToInt(i -> i)
-                .filter(compositePredicate)
-                .boxed()
-                .collect(Collectors.toList());
-    }
-
-    private <T> Predicate<T> matchAll(Predicate<T>... conditions) {
-        return Arrays.stream(conditions)
-                .reduce(Predicate::and)
-                .orElse(p -> true);
-    }
-
-    // detailed in https://stackoverflow.com/questions/59154995/cleaning-a-list-of-data-in-java8/59156527#59156527
-    public <T> List<T> cleanDataInPlaceWithMappingFunction(List<T> data, List<Function<T, T>> cleanOps) {
-        return data.stream().map((str) -> {
-            T cleanData = str;
-            for (Function<T, T> function : cleanOps) {
-                cleanData = function.apply(cleanData);
-            }
-            return cleanData;
-        }).collect(Collectors.toList());
-    }
-
-    public <T> List<T> cleanDataByHolger(List<T> data, List<Function<T, T>> cleanOps) {
-        cleanOps.stream()
-                .reduce(Function::andThen)
-                .ifPresent(f -> data.replaceAll(f::apply));
-        return data;
-    }
-
-    public <T> List<T> cleanDataByHolgerOptimised(List<T> data, List<UnaryOperator<T>> cleanOps) {
-        cleanOps.stream()
-                .reduce((f1, f2) -> t -> f2.apply(f1.apply(t)))
-                .ifPresent(data::replaceAll);
-        return data;
-    }
-
-
-    //
-    List<String> generatingRandomListOfWords() {
-        int listSize = 10;
-        int maxWordSize = 10;
-        int[] letters = IntStream.range('A', 'Z').toArray();
-        return IntStream.range(0, listSize)
-                .mapToObj(ix -> ThreadLocalRandom.current()
-                        .ints(ThreadLocalRandom.current().nextInt(1, maxWordSize), 0, letters.length)
-                        .map(i -> letters[i])
-                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                        .toString())
-                .collect(Collectors.toList());
-    }
-
-
-    // collect to a treemap or a sorted map while using streams
-    public SortedMap<String, Long> skill_nApplicants(Map<String, Skill> skillMap) {
-        return skillMap.values().stream()
-                .collect(Collectors.toMap(Skill::name, Skill::numApplicants,
-                        (a, b) -> a, TreeMap::new));
-    }
-
     public record Skill(String name, Long numApplicants) {
-    }
-
-
-    // conversion of a list or stream to a byte[] e.g. type widening to int and conversion to ByteArrayOutputStream
-    public static byte[] toByteArray(IntStream stream) {
-        return stream.collect(ByteArrayOutputStream::new, (baos, i) -> baos.write((byte) i),
-                (baos1, baos2) -> baos1.write(baos2.toByteArray(), 0, baos2.size()))
-                .toByteArray();
-    }
-
-    public static byte[] toByteArrayFunctional(List<Byte> listByte) {
-        return listByte.stream().collect(ByteArrayOutputStream::new, ByteArrayOutputStream::write,
-                (baos1, baos2) -> baos1.writeBytes(baos2.toByteArray()))
-                .toByteArray();
-    }
-
-    public static byte[] toByteArrayIterative(List<Byte> listByte) {
-        byte[] arrayBytes = new byte[listByte.size()];
-        IntStream.range(0, listByte.size()).forEach(i -> arrayBytes[i] = listByte.get(i));
-        return arrayBytes;
-    }
-
-    // custom comparator for a problem detailed in
-    // https://stackoverflow.com/questions/60914762/ignore-zero-values-at-sorted-in-lambda
-    public static <T> Comparator<T> zerosLast(ToIntFunction<? super T> keyExtractor) {
-        return (o1, o2) -> {
-            if (keyExtractor.applyAsInt(o1) == 0) {
-                return keyExtractor.applyAsInt(o2) == 0 ? 0 : 1;
-            } else {
-                return keyExtractor.applyAsInt(o2) == 0 ? -1 :
-                        Integer.compare(keyExtractor.applyAsInt(o1),
-                                keyExtractor.applyAsInt(o2));
-            }
-        };
-    }
-
-    // using multiple mappers to joining the output as a string from one object with varied attributes
-    public String extractSimilarAttributesFromEntityToCombinedString(SomeClass shipment) {
-        return Optional.ofNullable(shipment)
-                .map(SomeClass::bill)
-                .map(bill -> extractAttributes(bill, Bill::numberString, Bill::prefixString))
-                .orElse(null);
-    }
-
-    @SafeVarargs
-    private String extractAttributes(Bill entity, Function<Bill, String>... mappers) {
-        List<String> attributes = Arrays.stream(mappers)
-                .map(function -> function.apply(entity))
-                .collect(Collectors.toList());
-        return attributes.stream().anyMatch(s -> s == null || s.isEmpty()) ?
-                null : String.join("-", attributes);
     }
 
     record SomeClass(Bill bill) {
@@ -1095,106 +1581,20 @@ public class StreamsUtility {
     record Bill(String prefixString, String numberString) {
     }
 
-    // flatMapping two dimensional arrays of various types
-
-    <T> Stream<T> flatMapTwoDimensionalArray(T[][] array) {
-        return Arrays.stream(array).flatMap(Arrays::stream);
-    }
-
-    Stream<Integer> flatMapTwoDimensionalArray(int[][] array) {
-        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
-    }
-
-    Stream<Double> flatMapTwoDimensionalArray(double[][] array) {
-        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
-    }
-
-    Stream<Long> flatMapTwoDimensionalArray(long[][] array) {
-        return Arrays.stream(array).flatMap(arr -> Arrays.stream(arr).boxed());
-    }
-
     //
     record Coordinate(String x, String y) {
     }
 
-    public void groupingAndFilteringToCount(Collection<Coordinate> myList) {
-        Map<String, Long> r = myList.stream()
-                .collect(Collectors.groupingBy(Coordinate::x))
-                .entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> e.getValue().stream()
-                                .filter(distinctByKey(Coordinate::y)).count()));
-
-        Map<String, Integer> res = myList.stream()
-                .collect(Collectors.groupingBy(Coordinate::x,
-                        Collectors.mapping(Coordinate::y,
-                                Collectors.collectingAndThen(Collectors.toSet(), Set::size))));
-
-        // filtering as downstream considers the keys with value as 0
-        Map<String, Long> result1 = myList.stream()
-                .collect(Collectors.groupingBy(Coordinate::x,
-                        Collectors.filtering(distinctByKey(Coordinate::y),
-                                Collectors.counting())));
-
-        // groupingBy as a downstream on the other hand doesn't result in values with 0 count once filtered
-        Map<String, Long> result2 = myList.stream()
-                .collect(Collectors.filtering(distinctByKey(Coordinate::y),
-                        Collectors.groupingBy(Coordinate::x, Collectors.counting())));
-
-        Map<String, Long> result3 = myList.stream()
-                .filter(distinctByKey(Coordinate::x))
-                .collect(Collectors.groupingBy(Coordinate::x, Collectors.counting()));
-    }
-
-
-    // constructing a hashmap from a string e.g "t12345-g1234-o1234", this was stated
-    // at https://stackoverflow.com/questions/52137069/hashmap-using-streams-and-substring
-    public Map<String, String> constructHashMapUsingSubstringsFromAString(String lines) {
-        return Arrays.stream(lines.split("-"))
-                .collect(Collectors.toMap(s -> s.substring(0, 1), s -> s.substring(1)));
-    }
+    /*
+     * The easiest way to make a spliterator, but which results in the worst-quality result,
+     * is to pass an Iterator to Spliterators.spliteratorUnknownSize().
+     * You can obtain a slightly better spliterator by passing an Iterator and a size to Spliterators.spliterator.
+     * But if stream performance is important - especially, parallel performance -
+     * implement the full Spliterator interface, including all applicable characteristics.
+     */
 
     // to find the candidate with highest marks and to return onnly f the student is unique(only one) with those marks
     record Candidate(int marks) {
-    }
-
-    private Candidate highestMarkUniqueCandidate(List<Candidate> studentList) {
-        TreeMap<Integer, List<Candidate>> map = studentList.stream()
-                .collect(Collectors.groupingBy(Candidate::marks, TreeMap::new,
-                        Collectors.mapping(e -> e, Collectors.toList())));
-        if (map.firstEntry().equals(map.lastEntry())) {
-            return null;
-        }
-        List<Candidate> highestMarkStudents = map.lastEntry().getValue();
-        return highestMarkStudents.size() == 1 ? highestMarkStudents.get(0) : null;
-    }
-
-
-    // Modified version of an answer to https://stackoverflow.com/questions/53307682/how-to-interleave-merge-two-java-8-streams
-    public <T> Stream<T> interleaveStreams(Stream<? extends T> a, Stream<? extends T> b) {
-        Spliterator<? extends T> spA = a.spliterator();
-        Spliterator<? extends T> spB = b.spliterator();
-        long s = spA.estimateSize() + spB.estimateSize();
-        if (s < 0) s = Long.MAX_VALUE;
-        int ch = spA.characteristics() & spB.characteristics()
-                & (Spliterator.NONNULL | Spliterator.SIZED);
-        ch |= Spliterator.ORDERED;
-
-        return StreamSupport.stream(new Spliterators.AbstractSpliterator<>(s, ch) {
-            Spliterator<? extends T> sp1 = spA;
-            Spliterator<? extends T> sp2 = spB;
-
-            @Override
-            public boolean tryAdvance(Consumer<? super T> action) {
-                Spliterator<? extends T> sp = sp1;
-                if (sp.tryAdvance(action)) {
-                    sp1 = sp2;
-                    sp2 = sp;
-                    return true;
-                }
-                return sp2.tryAdvance(action);
-            }
-        }, false);
     }
 
     public static class InputStreamToStream {
@@ -1258,92 +1658,7 @@ public class StreamsUtility {
         }
     }
 
-    //
-    public static double[] sumUpColumns(double[][] x) {
-        return IntStream.range(0, Stream.of(x).mapToInt(a -> a.length).max().orElse(0))
-                .mapToDouble(i -> Arrays.stream(x)
-                        .mapToDouble(item -> i < item.length ? item[i] : 0.0)
-                        .sum())
-                .toArray();
-    }
-
-    public static double[] sumUpRows(double[][] x) {
-        return Stream.of(x)
-                .mapToDouble((double[] row) -> DoubleStream.of(row).sum())
-                .toArray();
-    }
-
-    //
-    public void streamOfNullable() {
-        long one = Stream.ofNullable("42").count();
-        long zero = Stream.ofNullable(null).count();
-        System.out.println(one);
-        System.out.println(zero);
-    }
-
-    //
-    public void streamFromOptional() {
-        Optional<Integer> a = Optional.empty();
-        Optional<Integer> b = null;
-        Optional<Integer> aOrB = a.or(() -> b);
-
-
-        Optional<String> optional = null;
-        if (optional != null) {
-            // execute either println or ()
-            optional.ifPresentOrElse(System.out::println, () -> {
-                System.out.println();
-            });
-        }
-
-        // return either optional or supplier
-        optional.or(StreamsUtility::supplier);
-
-
-        // stream of optional
-        Stream<Optional<Integer>> so = Stream.empty();
-        Stream<Integer> s = so.flatMap(Optional::stream);
-        Optional<Stream<Integer>> os = Optional.of(s);
-    }
-
-    private static Optional<? extends String> supplier() {
-        return Optional.of("");
-    }
-
-    //
-    public void iterateStream() {
-        Stream.iterate(1, i -> 2 * i).forEach(System.out::println);
-
-        Stream.iterate(1, i -> i <= 10, i -> 2 * i)
-                .forEach(System.out::println);
-    }
-
-    //
-    public static void partitionGroupSummingInt(List<Officer> off) {
-        int totalDaysInOffice = off.stream().mapToInt(Officer::totalDaysInOffice).sum();
-
-        List<Officer> officerList = Arrays.asList(new Officer("John", 5000),
-                new Officer("Matthew", 3000), new Officer("Robert", 2000),
-                new Officer("Dave", 2000), new Officer("Patrick", 10000));
-
-        Map<Boolean, Map<Officer, Integer>> collect = officerList.stream()
-                .collect(Collectors.partitioningBy(o -> o.totalDaysInOffice() >= 10000,
-                        Collectors.groupingBy(o -> o, Collectors.summingInt(Officer::totalDaysInOffice))));
-        System.out.println(collect);
-    }
-
     record Officer(String name, int totalDaysInOffice) {
-    }
-
-    // spliterators are the way to perform anaotmy on the streams operations
-    public void parallelSpliteratorCharacteristics() {
-        System.out.println(Stream.of(1L, 2L, 3L).spliterator().characteristics()); //
-        System.out.println(Stream.of(1L, 2L, 3L).limit(2).spliterator().characteristics());  // ORDERED
-        System.out.println(Stream.of(1L, 2L, 3L).limit(2).parallel().spliterator().characteristics()); // SUBSIZED, ORDERED, SIZED
-        Spliterator spliterator = Stream.of(1L, 2L, 3L).limit(2).spliterator();
-        Stream stream = StreamSupport.stream(spliterator, true);
-        System.out.println(spliterator.characteristics()); // ORDERED
-        System.out.println(stream.spliterator().characteristics()); // ORDERED
     }
 
     //
@@ -1351,204 +1666,6 @@ public class StreamsUtility {
     }
 
     record WorkExperience(int year, List<Skills> skill) {
-    }
-
-    public void flatMappingWithCollectorWhileReducing() {
-        List<Skills> skillSet1 = List.of(new Skills("Skill-1"), new Skills("Skill-2"), new Skills("Skill-3"));
-        List<Skills> skillSet2 = List.of(new Skills("Skill-1"), new Skills("Skill-4"), new Skills("Skill-2"));
-        List<Skills> skillSet3 = List.of(new Skills("Skill-1"), new Skills("Skill-9"), new Skills("Skill-2"));
-        List<WorkExperience> workExperienceList = List.of(new WorkExperience(2017, skillSet1),
-                new WorkExperience(2017, skillSet2), new WorkExperience(2018, skillSet3));
-
-        Map<Integer, Set<List<Skills>>> collectJ8 = workExperienceList.stream()
-                .collect(Collectors.groupingBy(WorkExperience::year,
-                        Collectors.mapping(WorkExperience::skill, Collectors.toSet())));
-        System.out.println(collectJ8);
-
-        Map<Integer, Set<Skills>> collectJ9 = workExperienceList.stream()
-                .collect(Collectors.groupingBy(WorkExperience::year,
-                        Collectors.flatMapping(workExp -> workExp.skill().stream(),
-                                Collectors.toSet())));
-        System.out.println(collectJ9);
-
-        Map<Integer, Set<Skills>> toMap = workExperienceList.stream()
-                .collect(Collectors.toMap(WorkExperience::year, we -> new HashSet<>(we.skill()),
-                        (s1, s2) -> {
-                            s1.addAll(s2);
-                            return s1;
-                        }));
-        System.out.println(toMap);
-
-        Map<Integer, Set<Skills>> optimizedMap = workExperienceList.stream()
-                .collect(Collectors.toMap(
-                        WorkExperience::year,
-                        we -> new HashSet<>(we.skill()),
-                        StreamsUtility::mergeSkills));
-        System.out.println(optimizedMap);
-    }
-
-    private static Set<Skills> mergeSkills(Set<Skills> s1, Set<Skills> s2) {
-        if (s1.size() > s2.size()) {
-            s1.addAll(s2);
-            return s1;
-        } else {
-            s2.addAll(s1);
-            return s2;
-        }
-    }
-
-    // this was asked at the following link
-    // https://stackoverflow.com/questions/58960735/why-does-iterating-a-mapped-sorted-stream-evaluate-more-elements-than-necessar
-    public static void mappedSortedStreamBehaviourOnTraversal() {
-        final List<Character> ALPHABET = List.of('a', 'b', 'c', 'd', 'e', 'f');
-        final int STOP_ORDINAL = 'b' - 'a';
-        Stream<Integer> ordinals = ALPHABET.stream()
-                .sorted()
-                .map(StreamsUtility::ordinal);
-
-        int count = 0;
-
-        Iterator<Integer> iterator = ordinals.iterator();
-        while (iterator.hasNext()) {
-            int ordinal = iterator.next();
-            if (ordinal > STOP_ORDINAL) {
-                System.out.println("stopping at " + ordinal);
-                break;
-            }
-            System.out.println("consuming " + ordinal);
-            ++count;
-        }
-
-        System.out.println("consumed " + count + " ordinals");
-    }
-
-    private static int ordinal(char letter) {
-        int ordinal = letter - 'a';
-        System.out.println("performing EXTREMELY EXPENSIVE mapping of " + letter + " -> " + ordinal);
-        return ordinal;
-    }
-
-    //
-    public void patternSplitAsStream() {
-        String starWars = "Luke Darthor Obimain QuiGoin Palpatine";
-        Function<String, Stream<String>> lineSplitter = l -> Pattern.compile(" ").splitAsStream(l);
-        Stream.of(starWars)
-                .flatMap(lineSplitter)
-                .sorted((Comparator.reverseOrder()))
-                .forEachOrdered(System.out::println);
-    }
-
-    // primitive iterators are rarely used in practice, but are efficient tool for iterating over int, long stream etc
-    public static boolean isValidJv8(String number) {
-        PrimitiveIterator.OfInt factor = IntStream.iterate(1, i -> 3 - i).iterator();
-        int sum = new StringBuilder(number).reverse()
-                .toString().chars()
-                .map(c -> c - '0')
-                .map(i -> i * factor.nextInt())
-                .reduce(0, (a, b) -> a + b / 10 + b % 10);
-        return (sum % 10) == 0;
-    }
-
-    public static boolean isValidJv9(long number) {
-        PrimitiveIterator.OfInt factor = IntStream.iterate(1, i -> 3 - i).iterator();
-        long sum = LongStream.iterate(number, n -> n > 0, n -> n / 10)
-                .map(n -> n % 10)
-                .map(i -> i * factor.nextInt())
-                .reduce(0, (a, b) -> a + b / 10 + b % 10);
-        return (sum % 10) == 0;
-    }
-
-    // peek is not invoked anymore based on the terminal operations
-    // the issue is discussed in details at https://stackoverflow.com/questions/48221783
-    public void peekNotInvokedWhileCountingTheStream() {
-        List<Integer> values = Arrays.asList(1, 2, 3);
-        values.stream()
-                .map(n -> n * 2)
-                .peek(System.out::print)
-                .count();
-    }
-
-    /**
-     * <p>
-     * Output ::
-     * Sample1
-     * Sample2
-     * Sample3
-     * Sample5
-     * <p>
-     * Expected ::
-     * Sample1
-     * Sample2
-     * Sample3
-     * this was discussed under https://stackoverflow.com/questions/47888814 and registered as bug at
-     * https://bugs.openjdk.java.net/browse/JDK-8193856
-     */
-    public static void incorrectTakeWhileBehaviourWithFlatMap() {
-        String[][] strArray = {{"Sample1", "Sample2"}, {"Sample3", "Sample4", "Sample5"}};
-
-        Arrays.stream(strArray)
-                .flatMap(Arrays::stream)
-                .takeWhile(ele -> !ele.equalsIgnoreCase("Sample4"))
-                .forEach(System.out::println);
-    }
-
-    // the utility is to derive a way to search words within comments
-    // the requirement was posed on https://stackoverflow.com/questions/60443274/
-    void searchWordsInComments(List<String> elements, List<String> listOfComments) {
-        Set<String> lowerCaseSet = elements.stream()
-                .map(String::toLowerCase)
-                .collect(Collectors.toSet());
-
-        Map<String, Long> output = listOfComments.stream()
-                .flatMap(e -> Arrays.stream(e.replace(".", "")
-                        .split(" "))
-                        .map(String::toLowerCase))
-                .filter(lowerCaseSet::contains)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
-                .entrySet().stream()
-                .sorted(Comparator.comparing(Map.Entry<String, Long>::getValue).reversed().thenComparing(Map.Entry::getKey))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
-
-        System.out.println(output);
-
-        Function<String, Map.Entry<String, Long>> function = f -> Map.entry(f, listOfComments.stream()
-                .filter(e -> e.toLowerCase().contains(f.toLowerCase())).count());
-
-        elements.stream()
-                .map(function)
-                .sorted(Comparator.comparing(Map.Entry<String, Long>::getValue)
-                        .reversed().thenComparing(Map.Entry::getKey))
-                .forEach(System.out::println);
-    }
-
-    void searchWordsInCommentsByHolger(List<String> elements, List<String> listOfComments) {
-        Map<String, Predicate<String>> filters = elements.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .map(s -> Pattern.compile(s, Pattern.LITERAL | Pattern.CASE_INSENSITIVE))
-                .collect(Collectors.toMap(Pattern::pattern, Pattern::asPredicate,
-                        (a, b) -> {
-                            throw new AssertionError("duplicates");
-                        }, LinkedHashMap::new));
-
-        filters.entrySet().stream()
-                .map(e -> Map.entry(e.getKey(), listOfComments.stream().filter(e.getValue()).count()))
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .forEachOrdered(e -> System.out.printf("%-7s%3d%n", e.getKey(), e.getValue()));
-    }
-
-    // generic approach to solving similar aggregate operations on various fields
-    private Nutrients nutrientsCalculator(List<FoodNutritional> responseBody) {
-        Supplier<Stream<FoodNutritional>> foodNutritionalSupplier = responseBody::stream;
-        return new Nutrients(
-                sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalCarbohydrate),
-                sumNutrition(foodNutritionalSupplier, FoodNutritional::getProtein),
-                sumNutrition(foodNutritionalSupplier, FoodNutritional::getTotalFat),
-                sumNutrition(foodNutritionalSupplier, FoodNutritional::getDietaryFiber));
-    }
-
-    private Double sumNutrition(Supplier<Stream<FoodNutritional>> foodNutritionalSupplier,
-                                ToDoubleFunction<FoodNutritional> nutritionTypeFunction) {
-        return foodNutritionalSupplier.get().mapToDouble(nutritionTypeFunction).sum();
     }
 
     record Nutrients(Double carbohydrates, Double protein, Double fat, Double dietaryFiber) {
@@ -1575,129 +1692,6 @@ public class StreamsUtility {
         public Double getProtein() {
             return protein;
         }
-    }
-
-
-    //
-    Integer[] sortArrayWithEvensIntact(Integer[] array) {
-        Map<Boolean, Map<Integer, Integer>> evenOdds = IntStream.range(0, array.length)
-                .boxed()
-                .collect(Collectors.partitioningBy(i -> array[i] % 2 == 0,
-                        Collectors.toMap(o -> o, i -> array[i])));
-
-        Map<Integer, Integer> oddSorted = remapWithSorting(evenOdds.get(Boolean.FALSE));
-
-        Map<Integer, Integer> overall = new HashMap<>(evenOdds.get(Boolean.TRUE));
-        overall.putAll(oddSorted);
-
-        return overall.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(Map.Entry::getValue)
-                .toArray(Integer[]::new);
-    }
-
-    Map<Integer, Integer> remapWithSorting(Map<Integer, Integer> initialIndexMapping) {
-        List<Integer> oddIndexes = new ArrayList<>(initialIndexMapping.keySet());
-        List<Integer> sortedOdds = initialIndexMapping.values().stream()
-                .sorted().collect(Collectors.toList());
-        return IntStream.range(0, sortedOdds.size())
-                .boxed()
-                .collect(Collectors.toMap(oddIndexes::get, sortedOdds::get));
-    }
-
-    //
-    static List<Predicate<Object>> predicates = List.of(
-            obj -> instanceOfAny(obj, Set.of(Integer.class, Long.class, String.class, Boolean.class)),
-            obj -> instanceOfAny(obj, Set.of(Map.class)));
-
-    static boolean instanceOfAny(Object obj, Set<Class<?>> set) {
-        return set.stream().anyMatch(clazz -> clazz.isInstance(obj));
-    }
-
-    static int grouper(Object obj) {
-        return IntStream.range(0, predicates.size())
-                .filter(i -> predicates.get(i).test(obj))
-                .findFirst()
-                .orElse(predicates.size());
-    }
-
-    public void splitMultipleTypeSubLists() {
-        List<Object> input = List.of(true, 1, 2L, "asdf", Map.of("a", "b"),
-                BigInteger.valueOf(23456), Map.of(3, 4), List.of("x", "y", "z"), false, 17, 'q');
-
-        Map<Integer, List<Object>> result =
-                input.stream().collect(Collectors.groupingBy(StreamsUtility::grouper));
-
-        result.forEach((k, v) -> System.out.println(k + " => " + v));
-    }
-
-    /*
-     *  Some sources admit better implementations than others:
-     *  an ArrayList with more than one element can always be split cleanly and evenly;
-     *  a LinkedList always splits poorly;
-     *  and hash-based and tree-based sets can generally be split reasonably well
-     */
-    public static void tryOutTreeSet(String[] args) {
-        TreeSet<String> ts = new TreeSet<>(Set.of("", "s"));
-        String[] sortedAWords = ts.stream()
-                .filter(s -> s.startsWith("a"))
-                .sorted() // no-op
-                .toArray(String[]::new);
-    }
-
-    /*
-     * The easiest way to make a spliterator, but which results in the worst-quality result,
-     * is to pass an Iterator to Spliterators.spliteratorUnknownSize().
-     * You can obtain a slightly better spliterator by passing an Iterator and a size to Spliterators.spliterator.
-     * But if stream performance is important - especially, parallel performance -
-     * implement the full Spliterator interface, including all applicable characteristics.
-     */
-
-    //
-    void spliteratorBehaviourToCloseStreams() {
-        Stream<String> stream = Stream.of("a", "b", "c");
-        Spliterator<String> spliterator = stream.spliterator();
-        // Some low lever operation with the spliterator
-        stream.close(); // do we need to close?
-
-        Stream<String> stream2 = Stream.of("a", "b", "c").limit(2);
-        Spliterator<String> spliterator2 = stream2.spliterator();
-        stream.close();
-        // Some low lever operation with the spliterator
-    }
-
-
-    private static int solutionToCutShortTheNumber(int num) {
-        return (int) IntStream.iterate(num, i -> i > 0, i -> i % 2 == 0 ? i / 2 : i - 1).count();
-    }
-
-    private static IntStream listToIntStream(List<Integer> list) {
-        return list.stream().flatMapToInt(IntStream::of);
-    }
-
-    private static void reverseSortAPrimitiveArray(int[] arr2) {
-        // careful about boundary values
-        int[] sortedArray = Arrays.stream(arr2)
-                .map(i -> -i).sorted().map(i -> -i) // just use 'sorted()' for ascending order
-                .toArray();
-        // safer way to sort
-        int[] safeSortedArray = Arrays.stream(arr2)
-                .boxed()
-                .sorted(Comparator.reverseOrder()) // use 'naturalOrder' for ascending order
-                .mapToInt(Integer::intValue)
-                .toArray();
-        Arrays.sort(arr2);
-    }
-
-    private IntStream reverseSort(int from, int to) {
-        return IntStream.range(from, to)
-                .filter(x -> x % 2 != 0)
-                .sorted().map(i -> to - i + from - 1);
-    }
-
-    private boolean isPrimeJava9(int n) {
-        return IntStream.iterate(2, i -> i * i <= n, i -> i + 1)
-                .noneMatch(i -> n % i == 0);
     }
 
     // complete reduction explained with the sample below
@@ -1748,60 +1742,53 @@ public class StreamsUtility {
         }
     }
 
-    /**
-     * https://stackoverflow.com/questions/65567231/
-     * Response from Holger in comments over the difference https://stackoverflow.com/questions/49760818
-     *
-     * @Holger any thoughts around, why would the API note and the implementation for the Collection#toArray(java.util.function.IntFunction)
-     * and Stream#toArray(java.util.function.IntFunction) differ? e.g. var collectionToArray = list.toArray(value -> new Integer[]{0}); would succeed
-     * while var streamToArray = list.stream().toArray(value -> new Integer[]{0}); would fail with a similar error as stated by the OP.
-     * I couldn't really convince myself on the contradictory behaviour of the APIs. (shouldn't the consistency matter while designing?)
-     * @Naman Stream.toArray(IntFunction) is a genuine Stream operation. In contrast,
-     * Collection.toArray(IntFunction) has been added in JDK 11, so the default implementation had to work atop
-     * the existing interface methods, so it’s just implemented as return toArray(generator.apply(0));
-     * and the contract of the method it delegates to, is to accept an array of arbitrary size,
-     * creating and returning a new one if it is too small. – Holger yesterday
-     * @Holger the implementation was kind of clear to me, the introduction of API on an existing interface,
-     * used as a bridge and hence making use of the existing method. I believe the underlying question that
-     * I might have failed to pose was that why do we need such strict validatios(begin size, accept size, end size, etc)
-     * within streams converted to an array and not be as lenient as we are while performing a collection to an array?
-     * Is it to deal with concurrency?
-     * @Naman “being lenient” is not a good thing, it’s a source of errors. But it’s not possible to change the contract of toArray(A[]).
-     * For Collection.toArray(IntFunction) that is only used for creating the zero-sized array and
-     * typically used with Type[]::new, such a check would not very useful.
-     * In contrast, the Stream.toArray may use the IntFunction to create the final result array (when the size is known in advance).
-     */
-    void collectionToArrayVersusStreamToArray() {
-        var list = Arrays.asList(1, 2, 3);
-        var collectionToArray = list.toArray(value -> new Integer[]{0});
-        var streamToArray = list.stream().toArray(value -> new Integer[]{0}); // fails with exception
+    public class SimpleKeySupplier implements Supplier<String> {
+        private final String keyPrefix;
+        private final int numToGenerate;
+        private int numGenerated;
+
+        public SimpleKeySupplier(String keyPrefix, int numRecs) {
+            this.keyPrefix = keyPrefix;
+            numToGenerate = numRecs;
+            numGenerated = 0;
+        }
+
+        @Override
+        public String get() {
+            if (numGenerated >= numToGenerate) {
+                return null;
+            } else {
+                return (keyPrefix + numGenerated++);
+            }
+        }
     }
 
-    // finding out an implementation of step average on infinite stream
-    // https://stackoverflow.com/questions/67405898/given-an-infinite-sequence
-    static Stream<Double> stepAverage(Stream<Double> stream, int step) {
-        return Streams.mapWithIndex(stream, (from, index) -> Map.entry(index, from))
-                .collect(Collectors.groupingBy(e -> (e.getKey() / step), TreeMap::new,
-                        Collectors.averagingDouble(Map.Entry::getValue)))
-                .values().stream();
+    public class PriceGroup {
+        String priceName;
+        String priceGroup;
+
+        public String getPriceName() {
+            return priceName;
+        }
+
+        public String getPriceGroup() {
+            return priceGroup;
+        }
     }
 
+    public class Price {
+        String priceName;
+        Integer price;
 
-    // stream's toList would not be able to return the parent type list
-    // https://stackoverflow.com/questions/67517262/why-cant-i-use-streamtolist-to-collect-a-list-of-a-class-interface
-    private interface Dodo {
+        public String getPriceName() {
+            return priceName;
+        }
+
+        public Integer getPrice() {
+            return price;
+        }
     }
 
     private class FancyDodo implements Dodo {
-    }
-
-    public void streamToListVsCollectorToList() {
-        final List<FancyDodo> fancyDodos = Stream.of(new FancyDodo()).toList();
-        final List<Dodo> againFancyDodos = Arrays.asList(Stream.of(new FancyDodo())
-                .toArray(Dodo[]::new));
-        final List<Dodo> dodos = Stream.of(new FancyDodo())
-                .collect(Collectors.toList());
-        // support the type
-        final List<Dodo> noFancyDodos = Stream.<Dodo>of(new FancyDodo()).toList();
     }
 }

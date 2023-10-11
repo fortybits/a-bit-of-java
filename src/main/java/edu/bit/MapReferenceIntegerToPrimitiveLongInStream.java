@@ -28,7 +28,7 @@ public class MapReferenceIntegerToPrimitiveLongInStream {
         System.out.println(result2);
     }
 
-//       0: aload_1
+    //       0: aload_1
 //       1: invokevirtual #42                 // Method java/lang/Integer.intValue:()I
 //       4: i2l
 //       5: lreturn
@@ -36,7 +36,7 @@ public class MapReferenceIntegerToPrimitiveLongInStream {
         return integer;
     }
 
-//       0: aload_1
+    //       0: aload_1
 //       1: invokevirtual #48                 // Method java/lang/Integer.longValue:()J
 //       4: lreturn
     long convertMeToo(Integer integer) {

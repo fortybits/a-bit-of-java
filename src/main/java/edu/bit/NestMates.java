@@ -39,7 +39,7 @@ public class NestMates {
                     words.add(t);
                 }
             }
-            System.out.println(words.toString());
+            System.out.println(words);
 
             new NestOne().f();
         }

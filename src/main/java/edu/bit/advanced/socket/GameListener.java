@@ -35,7 +35,7 @@ public class GameListener implements WebSocket.Listener {
     public CompletionStage<?> onPing(WebSocket webSocket, ByteBuffer message) {
         webSocket.request(1);
         System.out.println("Ping: Client ---> Server");
-        System.out.println(message.asCharBuffer().toString());
+        System.out.println(message.asCharBuffer());
         return new CompletableFuture().completeOnTimeout("Ping completed.", 5, TimeUnit.SECONDS).thenAccept(System.out::println);
     }
 
@@ -43,7 +43,7 @@ public class GameListener implements WebSocket.Listener {
     public CompletionStage<?> onPong(WebSocket webSocket, ByteBuffer message) {
         webSocket.request(1);
         System.out.println("Pong: Client ---> Server");
-        System.out.println(message.asCharBuffer().toString());
+        System.out.println(message.asCharBuffer());
         return new CompletableFuture().completeOnTimeout("Pong completed.", 5, TimeUnit.SECONDS).thenAccept(System.out::println);
     }
 

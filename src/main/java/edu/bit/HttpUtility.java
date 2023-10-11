@@ -8,6 +8,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
@@ -212,7 +213,7 @@ public class HttpUtility {
         HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .build()
-                .send(request, HttpResponse.BodyHandlers.ofString(Charset.forName("UTF-8")));
+                .send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
     }
 
     // adding multiple headers to the request

@@ -8,6 +8,136 @@ import java.util.Objects;
 
 public class Inheritance {
 
+    public static void defaultMethodBehaviourInJava8(String[] args) {
+        new Inheritance().useDefaultMethodsInSeaPlane();
+        System.out.println("Hey!");
+    }
+
+    public void useDefaultMethodsInSeaPlane() {
+        SeaPlane seaPlane = new SeaPlane();
+        seaPlane.takeOff();
+        seaPlane.turn();
+        seaPlane.cruise();
+        seaPlane.land(); // Method in class hierarchy rules
+    }
+
+    //
+    public void superInstanceSuperMethodInvocation() {
+        Jedi jedi = new Luke();
+        Jedi.attack();
+    }
+
+    // in JLS 6.6-5: "[A private class member] is not inherited by subclasses".
+    // discussed in details over https://stackoverflow.com/questions/48215297/method-reference-to-private-interface-method
+    // https://bugs.openjdk.java.net/browse/JDK-8194998 and also relates to
+    // https://stackoverflow.com/questions/48215194/compiler-message-file-broken-i-guess-a-java-compiler-bug
+    public void privateClassMemberInheritance() {
+        Runnable test = ((I) (new I() {
+        }))::test;  // compiles OK
+
+        // this won't compile in Java 9 and the message is broken as well,
+        // with java 11, the error message is fixed, but the behaviour persists
+//        Runnable test2 = ((new I() {}))::test;
+    }
+
+    // the following code with Java9 resulted in
+    // Exception in thread "main" java.lang.NoSuchFieldError: super
+    // this was admitted as a bug and is now fixed with Java-11 and above
+    // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8194847
+    public void noSuchFieldErrorForSuper() {
+        new C().test();
+    }
+
+    // interface implemented by enum
+    enum H implements G {
+        ONE, TWO;
+
+        @Override
+        public void s() {
+        }
+    }
+
+
+    public interface Another<T> {
+
+        default T someMethod() {
+            return null;
+        }
+    }
+
+
+    public interface DefaultFromParentInterface extends Another<Invoice> {
+        // some other methods here
+        default Invoice save(Invoice invoice) {
+            return Another.super.someMethod();
+        }
+    }
+
+    /**
+     * Default methods get inherited automatically
+     * We can override a default method
+     * Method in class hierarchy rules
+     * If there is a collision - hierarchy needs to be resolved
+     */
+    interface Fly {
+        default void takeOff() {
+            System.out.println("Fly :: takeOff");
+        }
+
+        default void turn() {
+            System.out.println("Fly :: turn");
+        }
+
+        default void cruise() {
+            System.out.println("Fly :: cruise");
+        }
+
+        default void land() {
+            System.out.println("Fly :: land");
+        }
+    }
+
+    interface Sail {
+        default void cruise() {
+            System.out.println("Sail :: cruise");
+        }
+    }
+
+    interface FastFly extends Fly {
+        default void takeOff() {
+            System.out.println("FastFly :: takeOff");  // We can override a default method
+        }
+    }
+
+    interface G {
+        void s();
+    }
+
+    //
+    public interface SubInt extends SuperInt {
+        @Override
+        default void method3() {  //  compile time error
+            System.out.println("Inside SubInt");
+        }
+    }
+
+    public interface SuperInt {
+
+        void method3();   // completely qualified
+
+        void method4(); // I am the boss of this class
+    }
+
+    interface I {
+        private void test() {
+        }
+    }
+
+    interface B {
+        private void test() {
+        }
+    }
+
     // basic inheritance of classes and their instance creation
     public abstract static class Animal {
         private final String kind;
@@ -84,50 +214,6 @@ public class Inheritance {
 
     }
 
-    // default methods invoked from parent interfaces via their extensions
-    public class Invoice {
-    }
-
-    public interface Another<T> {
-
-        default T someMethod() {
-            return null;
-        }
-    }
-
-    public interface DefaultFromParentInterface extends Another<Invoice> {
-        // some other methods here
-        default Invoice save(Invoice invoice) {
-            return Another.super.someMethod();
-        }
-    }
-
-
-    /**
-     * Default methods get inherited automatically
-     * We can override a default method
-     * Method in class hierarchy rules
-     * If there is a collision - hierarchy needs to be resolved
-     */
-    interface Fly {
-        default void takeOff() {
-            System.out.println("Fly :: takeOff");
-        }
-
-        default void turn() {
-            System.out.println("Fly :: turn");
-        }
-
-        default void cruise() {
-            System.out.println("Fly :: cruise");
-        }
-
-        default void land() {
-            System.out.println("Fly :: land");
-        }
-    }
-
-
     static class SeaPlane extends Vehicle implements FastFly, Sail {
         public void cruise() {
             System.out.println("SeaPlane :: cruise");
@@ -135,48 +221,10 @@ public class Inheritance {
         }
     }
 
-    interface Sail {
-        default void cruise() {
-            System.out.println("Sail :: cruise");
-        }
-    }
-
-    interface FastFly extends Fly {
-        default void takeOff() {
-            System.out.println("FastFly :: takeOff");  // We can override a default method
-        }
-    }
-
     static class Vehicle {
         public void land() {
             System.out.println("Vehicle :: land");
         }
-    }
-
-    public static void defaultMethodBehaviourInJava8(String[] args) {
-        new Inheritance().useDefaultMethodsInSeaPlane();
-        System.out.println("Hey!");
-    }
-
-    public void useDefaultMethodsInSeaPlane() {
-        SeaPlane seaPlane = new SeaPlane();
-        seaPlane.takeOff();
-        seaPlane.turn();
-        seaPlane.cruise();
-        seaPlane.land(); // Method in class hierarchy rules
-    }
-
-    // interface implemented by enum
-    enum H implements G {
-        ONE, TWO;
-
-        @Override
-        public void s() {
-        }
-    }
-
-    interface G {
-        void s();
     }
 
     // typical examples of inheritance with shapes
@@ -336,15 +384,6 @@ public class Inheritance {
         }
     }
 
-
-    //
-    public interface SubInt extends SuperInt {
-        @Override
-        default void method3() {  //  compile time error
-            System.out.println("Inside SubInt");
-        }
-    }
-
     public static class SubIntImpl implements SubInt {
         @Override
         public void method4() {
@@ -354,13 +393,6 @@ public class Inheritance {
         @Override
         public void method3() {
         }
-    }
-
-    public interface SuperInt {
-
-        void method3();   // completely qualified
-
-        void method4(); // I am the boss of this class
     }
 
     public static class SuperIntImpl implements SuperInt {
@@ -376,12 +408,6 @@ public class Inheritance {
         }
     }
 
-    //
-    public void superInstanceSuperMethodInvocation() {
-        Jedi jedi = new Luke();
-        jedi.attack();
-    }
-
     static class Jedi {
         static void attack() {
             System.out.println("Jedi's attack.");
@@ -394,41 +420,14 @@ public class Inheritance {
         }
     }
 
-    // in JLS 6.6-5: "[A private class member] is not inherited by subclasses".
-    // discussed in details over https://stackoverflow.com/questions/48215297/method-reference-to-private-interface-method
-    // https://bugs.openjdk.java.net/browse/JDK-8194998 and also relates to
-    // https://stackoverflow.com/questions/48215194/compiler-message-file-broken-i-guess-a-java-compiler-bug
-    public void privateClassMemberInheritance() {
-        Runnable test = ((I) (new I() {
-        }))::test;  // compiles OK
-
-        // this won't compile in Java 9 and the message is broken as well,
-        // with java 11, the error message is fixed, but the behaviour persists
-//        Runnable test2 = ((new I() {}))::test;
-    }
-
-    interface I {
-        private void test() {
-        }
-    }
-
-    // the following code with Java9 resulted in
-    // Exception in thread "main" java.lang.NoSuchFieldError: super
-    // this was admitted as a bug and is now fixed with Java-11 and above
-    // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8194847
-    public void noSuchFieldErrorForSuper() {
-        new C().test();
-    }
-
-    interface B {
-        private void test() {
-        }
-    }
-
     static class C implements B {
         void test() {
             B.super.test();
         }
+    }
+
+    // default methods invoked from parent interfaces via their extensions
+    public class Invoice {
     }
 
 }

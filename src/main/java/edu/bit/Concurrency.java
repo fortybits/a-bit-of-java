@@ -121,7 +121,7 @@ public class Concurrency {
 
     public static class PhaserSample implements Runnable {
 
-        private Phaser phaser;
+        private final Phaser phaser;
 
         private PhaserSample(Phaser phaser) {
             this.phaser = phaser;
@@ -181,7 +181,7 @@ public class Concurrency {
 
         static class LoginQueueUsingSemaphore {
 
-            private Semaphore semaphore;
+            private final Semaphore semaphore;
 
             public LoginQueueUsingSemaphore(int slotLimit) {
                 semaphore = new Semaphore(slotLimit);
@@ -307,8 +307,8 @@ public class Concurrency {
 
     // A class to represent threads for which the convertNumbersToName thread waits.
     public class Worker extends Thread {
-        private int delay;
-        private CountDownLatch latch;
+        private final int delay;
+        private final CountDownLatch latch;
 
         public Worker(int delay, CountDownLatch latch, String name) {
             super(name);

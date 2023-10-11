@@ -74,8 +74,7 @@ public class JShellAPI {
 
         js.eval("System.setProperty(\"jdk.module.path\", \""
                 + modulePath + "\");");
-        String code = ""
-                + "try {"
+        String code = "try {"
                 + "    Class.forName(\"com.mysql.jdbc.Driver\").newInstance();"
                 + "} catch (Exception e) {"
                 + "    System.out.println(e.toString());"

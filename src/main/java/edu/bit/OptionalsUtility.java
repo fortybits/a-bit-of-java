@@ -42,6 +42,18 @@ public class OptionalsUtility {
         return Optional.empty();
     }
 
+    private static Optional<String> prefix() {
+        return Optional.of("");
+    }
+
+    static Optional<URI> findNamespaceByPrefix(String str) {
+        return Optional.empty();
+    }
+
+    static Optional<URI> getDefaultNamespace() {
+        return Optional.empty();
+    }
+
     //
     public void optionalOrElseAPIs() {
         Optional<Integer> anyOddInStream = Stream.of(2, 4, 6, 8).filter(x -> x % 2 == 1).findAny();
@@ -70,6 +82,23 @@ public class OptionalsUtility {
     }
 
     private void doNothing() {
+    }
+
+    // use case of converging the removal of isPresent API with map/flatMap within Optional
+    public void trickyOptional() {
+        Optional<String> prefix = prefix();
+        Optional<URI> requirement = prefix.isPresent() ?
+                prefix.flatMap(OptionalsUtility::findNamespaceByPrefix) : getDefaultNamespace();
+
+        // tempting but incorrect
+        Optional<URI> namespace = prefix
+                .flatMap(OptionalsUtility::findNamespaceByPrefix)
+                .or(OptionalsUtility::getDefaultNamespace);
+
+        // correct way with wrapping up
+        Optional<URI> namespaces = prefix
+                .map(str -> findNamespaceByPrefix(str))
+                .orElseGet(OptionalsUtility::getDefaultNamespace);
     }
 
     public static final class OptionalString {
@@ -116,34 +145,5 @@ public class OptionalsUtility {
         public String getAsString() {
             return Optional.of(value).orElseThrow(() -> new NoSuchElementException("No value present"));
         }
-    }
-
-    // use case of converging the removal of isPresent API with map/flatMap within Optional
-    public void trickyOptional() {
-        Optional<String> prefix = prefix();
-        Optional<URI> requirement = prefix.isPresent() ?
-                prefix.flatMap(OptionalsUtility::findNamespaceByPrefix) : getDefaultNamespace();
-
-        // tempting but incorrect
-        Optional<URI> namespace = prefix
-                .flatMap(OptionalsUtility::findNamespaceByPrefix)
-                .or(OptionalsUtility::getDefaultNamespace);
-
-        // correct way with wrapping up
-        Optional<URI> namespaces = prefix
-                .map(str -> findNamespaceByPrefix(str))
-                .orElseGet(OptionalsUtility::getDefaultNamespace);
-    }
-
-    private static Optional<String> prefix() {
-        return Optional.of("");
-    }
-
-    static Optional<URI> findNamespaceByPrefix(String str) {
-        return Optional.empty();
-    }
-
-    static Optional<URI> getDefaultNamespace() {
-        return Optional.empty();
     }
 }

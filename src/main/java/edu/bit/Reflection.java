@@ -7,6 +7,40 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 
 public class Reflection {
+    public static @NotNull @Other My.@NotNull @Other Builder createBuilder() {
+        return new My.Builder();
+    }
+
+    // the particular use cases of accessing a JVM argument to toggle its value makes use of Unsafe
+    public void disableWarningAccessingJVMArgs() {
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            Unsafe u = (Unsafe) theUnsafe.get(null);
+
+            Class cls = Class.forName("jdk.internal.module.IllegalAccessLogger");
+            Field logger = cls.getDeclaredField("logger");
+            u.putObjectVolatile(cls, u.staticFieldOffset(logger), null);
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    public interface Calculator {
+        default int methodA(int a, int b) {
+            return a - b;
+        }
+    }
+
+
+    @Target({ElementType.METHOD, ElementType.TYPE_USE})
+    public @interface NotNull {
+    }
+
+    @Target({ElementType.METHOD, ElementType.TYPE_USE})
+    public @interface Other {
+    }
+
     public static class AnnotatedElementImpl implements AnnotatedElement {
         @Override
         public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
@@ -63,28 +97,6 @@ public class Reflection {
             public String getAttackType() {
                 return attackType;
             }
-        }
-    }
-
-    // the particular use cases of accessing a JVM argument to toggle its value makes use of Unsafe
-    public void disableWarningAccessingJVMArgs() {
-        try {
-            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-            theUnsafe.setAccessible(true);
-            Unsafe u = (Unsafe) theUnsafe.get(null);
-
-            Class cls = Class.forName("jdk.internal.module.IllegalAccessLogger");
-            Field logger = cls.getDeclaredField("logger");
-            u.putObjectVolatile(cls, u.staticFieldOffset(logger), null);
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
-
-    public interface Calculator {
-        default int methodA(int a, int b) {
-            return a - b;
         }
     }
 
@@ -158,17 +170,5 @@ public class Reflection {
                 return new My();
             }
         }
-    }
-
-    @Target({ElementType.METHOD, ElementType.TYPE_USE})
-    public @interface NotNull {
-    }
-
-    @Target({ElementType.METHOD, ElementType.TYPE_USE})
-    public @interface Other {
-    }
-
-    public static @NotNull @Other My.@NotNull @Other Builder createBuilder() {
-        return new My.Builder();
     }
 }

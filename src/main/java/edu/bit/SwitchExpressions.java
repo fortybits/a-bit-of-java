@@ -154,23 +154,6 @@ public class SwitchExpressions {
     // A switch expression must complete or throw an exception.
     // The fallthrough cases are avoided with the expressions
 
-    private enum Day {
-        MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
-    }
-
-    // reference https://stackoverflow.com/questions/66204407/java-15-switch-expression-with-void-return-type
-    class Event {
-        EventType eventType;
-
-        public EventType getEventType() {
-            return eventType;
-        }
-    }
-
-    enum EventType {
-        ORDER, PAYMENT, INVOICE, ADDED
-    }
-
     void processEventWithoutFailure(Event event) {
         switch (event.getEventType()) {
             case ORDER -> handleOrder(event);
@@ -188,5 +171,22 @@ public class SwitchExpressions {
     }
 
     private void handleOrder(Event event) {
+    }
+
+    private enum Day {
+        MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+    }
+
+    enum EventType {
+        ORDER, PAYMENT, INVOICE, ADDED
+    }
+
+    // reference https://stackoverflow.com/questions/66204407/java-15-switch-expression-with-void-return-type
+    class Event {
+        EventType eventType;
+
+        public EventType getEventType() {
+            return eventType;
+        }
     }
 }

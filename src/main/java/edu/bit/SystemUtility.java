@@ -19,43 +19,13 @@ import java.util.stream.Stream;
 
 public class SystemUtility {
 
-    public void verifyJavaRuntimeVersion() {
-        System.out.println("java.runtime.version = " + System.getProperty("java.runtime.version"));
-        System.out.println(Runtime.version());
-        Runtime.Version version = Runtime.Version.parse("9");
-        version = Runtime.Version.parse("9.0.1");
-        version = Runtime.Version.parse("9.0.0.15");
-        version = Runtime.Version.parse("9.0.0.15+181");
-
-        System.out.println(System.getProperty("java.specification.version"));
-        System.out.println(getMajorVersion());
-    }
+    //
+    public int publicTestVariable = 10;
 
     private static int getMajorVersion() {
         String systemVersionProperty = System.getProperty("java.specification.version");
         return systemVersionProperty.contains(".") ? Integer.parseInt(systemVersionProperty.substring(2)) :
                 Integer.parseInt(systemVersionProperty);
-    }
-
-    public void testCodePointBehaviour() {
-        String yourString = "U+00E4";
-        int codepoint = Integer.parseInt(yourString.substring(2), 16);
-        System.out.println(Character.toString(codepoint));
-
-        String myString = "\u0048\u0065\u006C\u006C\u006F World";
-        myString.chars().forEach(a -> System.out.print((char) a));
-
-
-        "Dodd\u2013Frank".chars().forEach(a -> System.out.print((char) a));
-    }
-
-    // filtering processes of a specific user
-    private void filterProcessesTest() {
-        Optional<String> currUser = ProcessHandle.current().info().user();
-        ProcessHandle.allProcesses()
-                .filter(p1 -> p1.info().user().equals(currUser))
-                .sorted(SystemUtility::parentComparator)
-                .forEach(SystemUtility::showProcess);
     }
 
     private static int parentComparator(ProcessHandle p1, ProcessHandle p2) {
@@ -68,50 +38,6 @@ public class SystemUtility {
         ProcessHandle.Info info = ph.info();
         System.out.printf("pid: %d, user: %s, cmd: %s%n",
                 ph.pid(), info.user().orElse("none"), info.command().orElse("none"));
-    }
-
-    public static class DifferentProcess {
-
-        public static void main(String[] args) {
-            System.out.println("### Current process info ###");
-            ProcessHandle currentProcess = ProcessHandle.current();
-            printInfo(currentProcess);
-
-            System.out.println();
-
-            // Fork a child process that lasts for a few seconds
-            spawnProcess("jshell --startup ./sleep.txt");
-
-            printAllVisibleProcesses();
-        }
-
-        private static void printAllVisibleProcesses() {
-            System.out.println("### Visible processes info ###");
-            ProcessHandle.allProcesses().forEach(DifferentProcess::printInfo);
-            System.out.println();
-        }
-
-        private static void spawnProcess(String command) {
-            System.out.println("Spawning: " + command);
-            try {
-                Runtime.getRuntime().exec(command);
-                System.out.println();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        private static void printInfo(ProcessHandle processHandle) {
-            ProcessHandle.Info processInfo = processHandle.info();
-            System.out.println("Process ID: " + processHandle.pid());
-
-            System.out.println("Process arguments: " + Arrays.toString(processInfo.arguments().orElse(new String[0])));
-            System.out.println("Process executable: " + processInfo.command().orElse(""));
-            System.out.println("Process command line: " + processInfo.commandLine().orElse(""));
-            System.out.println("Process start time: " + processInfo.startInstant().orElse(null));
-            System.out.println("Process total cputime accumulated: " + processInfo.totalCpuDuration().orElse(null));
-            System.out.println("Process user: " + processInfo.user().orElse(""));
-        }
     }
 
     private static void handlingProcessesOnExit() throws IOException {
@@ -175,6 +101,62 @@ public class SystemUtility {
     }
 
     //
+    public static void killProcess() {
+        Stream<ProcessHandle> currentProcess = ProcessHandle.allProcesses();
+        currentProcess.parallel().forEach(processHandle -> {
+            System.out.println(processHandle.pid());
+            processHandle.destroy();
+        });
+        System.out.println("current process id:" + currentProcess);
+        System.out.println("current process id:" + ManagementFactory.getRuntimeMXBean().getName());
+
+        long pid = Long.MAX_VALUE;
+        Optional<ProcessHandle> processHandle = ProcessHandle.of(pid);
+        if (processHandle.isPresent()) {
+            ProcessHandle.Info processInfo = processHandle.get().info();
+            System.out.println("Process arguments: " + Arrays.toString(processInfo.arguments().orElse(new String[0])));
+            System.out.println("Process executable: " + processInfo.command().orElse(""));
+            System.out.println("Process command line: " + processInfo.commandLine().orElse(""));
+            System.out.println("Process start time: " + processInfo.startInstant().orElse(null));
+            System.out.println("Process total cputime accumulated: " + processInfo.totalCpuDuration().orElse(null));
+            System.out.println("Process user: " + processInfo.user().orElse(""));
+        }
+    }
+
+    public void verifyJavaRuntimeVersion() {
+        System.out.println("java.runtime.version = " + System.getProperty("java.runtime.version"));
+        System.out.println(Runtime.version());
+        Runtime.Version version = Runtime.Version.parse("9");
+        version = Runtime.Version.parse("9.0.1");
+        version = Runtime.Version.parse("9.0.0.15");
+        version = Runtime.Version.parse("9.0.0.15+181");
+
+        System.out.println(System.getProperty("java.specification.version"));
+        System.out.println(getMajorVersion());
+    }
+
+    public void testCodePointBehaviour() {
+        String yourString = "U+00E4";
+        int codepoint = Integer.parseInt(yourString.substring(2), 16);
+        System.out.println(Character.toString(codepoint));
+
+        String myString = "\u0048\u0065\u006C\u006C\u006F World";
+        myString.chars().forEach(a -> System.out.print((char) a));
+
+
+        "Dodd\u2013Frank".chars().forEach(a -> System.out.print((char) a));
+    }
+
+    // filtering processes of a specific user
+    private void filterProcessesTest() {
+        Optional<String> currUser = ProcessHandle.current().info().user();
+        ProcessHandle.allProcesses()
+                .filter(p1 -> p1.info().user().equals(currUser))
+                .sorted(SystemUtility::parentComparator)
+                .forEach(SystemUtility::showProcess);
+    }
+
+    //
     public void executeProcesses() throws IOException {
         Process process = new ProcessBuilder(List.of("ping", "-i", "1", "-c", "5", "google.com")).inheritIO().start();
         ProcessHandle processHandle = process.toHandle();
@@ -200,7 +182,7 @@ public class SystemUtility {
 
         System.out.printf("Start time: %s%n",
                 info.startInstant().map(i -> i.atZone(ZoneId.systemDefault())
-                        .toLocalDateTime().toString())
+                                .toLocalDateTime().toString())
                         .orElse(na));
 
         System.out.printf("Arguments: %s%n",
@@ -209,32 +191,6 @@ public class SystemUtility {
 
         System.out.printf("User: %s%n", info.user().orElse(na));
     }
-
-    //
-    public static void killProcess() {
-        Stream<ProcessHandle> currentProcess = ProcessHandle.allProcesses();
-        currentProcess.parallel().forEach(processHandle -> {
-            System.out.println(processHandle.pid());
-            processHandle.destroy();
-        });
-        System.out.println("current process id:" + currentProcess.toString());
-        System.out.println("current process id:" + ManagementFactory.getRuntimeMXBean().getName());
-
-        long pid = Long.MAX_VALUE;
-        Optional<ProcessHandle> processHandle = ProcessHandle.of(pid);
-        if (processHandle.isPresent()) {
-            ProcessHandle.Info processInfo = processHandle.get().info();
-            System.out.println("Process arguments: " + Arrays.toString(processInfo.arguments().orElse(new String[0])));
-            System.out.println("Process executable: " + processInfo.command().orElse(""));
-            System.out.println("Process command line: " + processInfo.commandLine().orElse(""));
-            System.out.println("Process start time: " + processInfo.startInstant().orElse(null));
-            System.out.println("Process total cputime accumulated: " + processInfo.totalCpuDuration().orElse(null));
-            System.out.println("Process user: " + processInfo.user().orElse(""));
-        }
-    }
-
-    //
-    public int publicTestVariable = 10;
 
     public void varHandleSample() throws NoSuchFieldException, IllegalAccessException {
         SystemUtility e = new SystemUtility();
@@ -282,6 +238,77 @@ public class SystemUtility {
                 MethodType.methodType(boolean.class, Basics.Question.class, int.class, int.class));
 
         boolean r1 = (boolean) mhToVhCompareAndSet2.invokeExact(fieldHandle, q, 0, 1);
+    }
+
+    public void currencyFormatter() {
+        Currency currency = Currency.getInstance("EUR");
+        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.FRANCE);
+        currencyFormatter.setMaximumFractionDigits(0);
+        currencyFormatter.setMinimumFractionDigits(0);
+        currencyFormatter.setCurrency(currency);
+
+        String expected = "123 457 €";
+        String obtained = currencyFormatter.format(123456.789);
+        System.out.println(expected.equals(obtained));
+        System.out.println(expected);
+        System.out.println(obtained);
+        System.out.println(expected.equals(obtained));
+
+        System.out.format("Bytes from expected: %s\n", Arrays.toString(expected.getBytes()));
+        System.out.format("Bytes from expected: %s\n", Arrays.toString(obtained.getBytes()));
+    }
+
+    public void formatNumberShort() {
+        NumberFormat fmt = NumberFormat.getCompactNumberInstance(Locale.US, NumberFormat.Style.SHORT);
+        System.out.println(fmt.format(1000));
+        System.out.println(fmt.format(100000));
+        System.out.println(fmt.format(10000000));
+        System.out.println(fmt.format(5501));
+        System.out.println(fmt.format(12034));
+    }
+
+    public static class DifferentProcess {
+
+        public static void main(String[] args) {
+            System.out.println("### Current process info ###");
+            ProcessHandle currentProcess = ProcessHandle.current();
+            printInfo(currentProcess);
+
+            System.out.println();
+
+            // Fork a child process that lasts for a few seconds
+            spawnProcess("jshell --startup ./sleep.txt");
+
+            printAllVisibleProcesses();
+        }
+
+        private static void printAllVisibleProcesses() {
+            System.out.println("### Visible processes info ###");
+            ProcessHandle.allProcesses().forEach(DifferentProcess::printInfo);
+            System.out.println();
+        }
+
+        private static void spawnProcess(String command) {
+            System.out.println("Spawning: " + command);
+            try {
+                Runtime.getRuntime().exec(command);
+                System.out.println();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private static void printInfo(ProcessHandle processHandle) {
+            ProcessHandle.Info processInfo = processHandle.info();
+            System.out.println("Process ID: " + processHandle.pid());
+
+            System.out.println("Process arguments: " + Arrays.toString(processInfo.arguments().orElse(new String[0])));
+            System.out.println("Process executable: " + processInfo.command().orElse(""));
+            System.out.println("Process command line: " + processInfo.commandLine().orElse(""));
+            System.out.println("Process start time: " + processInfo.startInstant().orElse(null));
+            System.out.println("Process total cputime accumulated: " + processInfo.totalCpuDuration().orElse(null));
+            System.out.println("Process user: " + processInfo.user().orElse(""));
+        }
     }
 
     // var handling the global variable within a class
@@ -338,7 +365,7 @@ public class SystemUtility {
 
 
             startTime = System.currentTimeMillis();
-            String appended = (String) strings.stream().limit(100000).reduce("", (l, r) -> l.toString() + r.toString());
+            String appended = (String) strings.stream().limit(100000).reduce("", (l, r) -> l + r.toString());
 
             totaltime = System.currentTimeMillis() - startTime;
 
@@ -351,32 +378,5 @@ public class SystemUtility {
                     .findVirtual(String.class, "concat", MethodType.methodType(String.class, String.class));
             concatHandle = concatHandle.bindTo("Hello, ");
         }
-    }
-
-    public void currencyFormatter() {
-        Currency currency = Currency.getInstance("EUR");
-        NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(Locale.FRANCE);
-        currencyFormatter.setMaximumFractionDigits(0);
-        currencyFormatter.setMinimumFractionDigits(0);
-        currencyFormatter.setCurrency(currency);
-
-        String expected = "123 457 €";
-        String obtained = currencyFormatter.format(123456.789);
-        System.out.println(expected.equals(obtained));
-        System.out.println(expected);
-        System.out.println(obtained);
-        System.out.println(expected.equals(obtained));
-
-        System.out.format("Bytes from expected: %s\n", Arrays.toString(expected.getBytes()));
-        System.out.format("Bytes from expected: %s\n", Arrays.toString(obtained.getBytes()));
-    }
-
-    public void formatNumberShort() {
-        NumberFormat fmt = NumberFormat.getCompactNumberInstance(Locale.US, NumberFormat.Style.SHORT);
-        System.out.println(fmt.format(1000));
-        System.out.println(fmt.format(100000));
-        System.out.println(fmt.format(10000000));
-        System.out.println(fmt.format(5501));
-        System.out.println(fmt.format(12034));
     }
 }

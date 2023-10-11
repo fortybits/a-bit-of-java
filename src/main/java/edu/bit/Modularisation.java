@@ -15,6 +15,16 @@ import java.util.stream.Collectors;
 
 public class Modularisation {
 
+    // get a module name from the jar file programmatically
+    public static void extractModuleNameProgrammatically(Path dir1) {
+        ModuleFinder finder = ModuleFinder.of(dir1);
+        Set<ModuleReference> moduleReferences = finder.findAll();
+        Set<String> moduleNames = moduleReferences.stream()
+                .map(mr -> mr.descriptor().name())
+                .collect(Collectors.toSet());
+        System.out.println(moduleNames);
+    }
+
     public void providersWithinModules() {
         ModuleFinder finder = ModuleFinder.of(Paths.get("/Users/naman.nigam/GitHub/Naman/Jigsaw/out/production/"));
         ModuleLayer parent = ModuleLayer.boot();
@@ -53,8 +63,8 @@ public class Modularisation {
 
         ModuleLayer layer = parent.defineModulesWithOneLoader(configuration, systemClassLoader);
 
-        System.out.println(layer.boot().modules().stream().map(Module::getName).collect(Collectors.toList()));
-        System.out.println(layer.boot().modules().stream().map(Module::getName).collect(Collectors.toList()).size());
+        System.out.println(ModuleLayer.boot().modules().stream().map(Module::getName).collect(Collectors.toList()));
+        System.out.println(ModuleLayer.boot().modules().stream().map(Module::getName).collect(Collectors.toList()).size());
         Class<?> c = layer.findLoader("modular").loadClass("com.module.ModularExperiment");
 
         System.out.println(Arrays.toString(c.getDeclaredFields()));
@@ -186,15 +196,5 @@ public class Modularisation {
                 }
             };
         }
-    }
-
-    // get a module name from the jar file programmatically
-    public static void extractModuleNameProgrammatically(Path dir1) {
-        ModuleFinder finder = ModuleFinder.of(dir1);
-        Set<ModuleReference> moduleReferences = finder.findAll();
-        Set<String> moduleNames = moduleReferences.stream()
-                .map(mr -> mr.descriptor().name())
-                .collect(Collectors.toSet());
-        System.out.println(moduleNames);
     }
 }

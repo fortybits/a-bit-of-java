@@ -12,6 +12,20 @@ public class ExceptionHandling {
         }
     }
 
+    //
+    public void closeableInTryWithResource() {
+        String soprano = null;
+
+        CloseIt closeIt = new CloseIt();
+        try (closeIt) {
+            System.out.println(soprano.matches(null));
+        } catch (Exception e) {
+            System.out.println("Exception!");
+        } catch (Throwable throwable) {
+            System.out.println("Throwable!");
+        }
+    }
+
     static class CustomException extends Exception {
 
         public CustomException() {
@@ -28,20 +42,6 @@ public class ExceptionHandling {
             if (testException instanceof InterruptedException) {
                 System.out.println("Interrupted here...");
             }
-        }
-    }
-
-    //
-    public void closeableInTryWithResource() {
-        String soprano = null;
-
-        CloseIt closeIt = new CloseIt();
-        try (closeIt) {
-            System.out.println(soprano.matches(null));
-        } catch (Exception e) {
-            System.out.println("Exception!");
-        } catch (Throwable throwable) {
-            System.out.println("Throwable!");
         }
     }
 

@@ -35,6 +35,49 @@ public class Records {
         }
     }
 
+    // constructor parameter names for records
+    // https://stackoverflow.com/questions/67038058/java-record-cannot-get-parameter-names-from-constructors
+    public static void constructorParametersOfRecords() {
+        var recordTest2 = new RecordConstructors(1, 2, 3.0, LocalDateTime.now());
+        Class<?> objectClass = recordTest2.getClass();
+        Constructor<?>[] constructors = objectClass.getConstructors();
+        for (Constructor<?> con : constructors) {
+            System.out.println(con.getName());
+            Parameter[] parameters = con.getParameters();
+            for (Parameter parameter : parameters) {
+                System.out.printf("param: %s\n", parameter.getName());
+            }
+        }
+    }
+
+    // if there be a need to identify the canonical constructor of a record for initialisation of serialisation purpose
+    // one can try to find the constructor using either of the following code
+    // https://stackoverflow.com/questions/67126109/is-there-a-way-to-recognise-a-java-16-records-canonical-constructor
+    public static void canonicalConstructorOfRecord() {
+        Class<?>[] componentTypes = Arrays.stream(Canonical.class.getRecordComponents())
+                .map(RecordComponent::getType)
+                .toArray(Class<?>[]::new);
+
+        Constructor<?> canonicalConstructor = Arrays.stream(Canonical.class.getDeclaredConstructors())
+                .filter(c -> Arrays.equals(c.getParameterTypes(), componentTypes))
+                .findFirst()
+                .orElseThrow();
+
+        System.out.println(canonicalConstructor);
+    }
+
+    static <T> Constructor<T> canonicalConstructorOfRecord(Class<T> recordClass)
+            throws NoSuchMethodException, SecurityException {
+        if (recordClass.isRecord()) {
+            Class<?>[] componentTypes = Arrays.stream(recordClass.getRecordComponents())
+                    .map(RecordComponent::getType)
+                    .toArray(Class<?>[]::new);
+            return recordClass.getDeclaredConstructor(componentTypes);
+        } else {
+            throw new IllegalArgumentException("The class is not a record.");
+        }
+    }
+
     // this particular example of moving from lombok based annotations to records is also listed at
     // https://stackoverflow.com/questions/60796961/compatibility-issues-while-converting-classes-to-records
     public void equalsImplementationDuringMigration() {
@@ -71,27 +114,6 @@ public class Records {
         PersonRecord person = new PersonRecord("naman", "nigam");
         Class<?> personCls = Class.forName("edu.bit.features.records.Person");
         System.out.println(personCls.isRecord());
-    }
-
-    record ConstFunction<T, R>(T t, R r) implements Function<T, R> {
-        // static fields are allowed
-        static String field;
-
-        @Override
-        public R apply(T t) {
-            return null;
-        }
-
-        // trick here is that the name of the variable is same as the abstract methods of interfaces
-        record ConstCallable<V>(V call) implements Callable<V> {
-        }
-
-        record ConstSupplier<T>(T get) implements Supplier<T> {
-        }
-
-        // what records are not meant for
-        record Executor<T>(Supplier<T> supply, Consumer<T> accept) {
-        }
     }
 
     // records could be used to implement callable
@@ -215,7 +237,6 @@ public class Records {
         }
     }
 
-
     // the pattern for null values can be implemented such as the following implementations
     interface MyRecord {
         String id();
@@ -235,6 +256,27 @@ public class Records {
         String firstName();
 
         String lastName();
+    }
+
+    record ConstFunction<T, R>(T t, R r) implements Function<T, R> {
+        // static fields are allowed
+        static String field;
+
+        @Override
+        public R apply(T t) {
+            return null;
+        }
+
+        // trick here is that the name of the variable is same as the abstract methods of interfaces
+        record ConstCallable<V>(V call) implements Callable<V> {
+        }
+
+        record ConstSupplier<T>(T get) implements Supplier<T> {
+        }
+
+        // what records are not meant for
+        record Executor<T>(Supplier<T> supply, Consumer<T> accept) {
+        }
     }
 
     /**
@@ -303,7 +345,7 @@ public class Records {
         }
     }
 
-    public static record IdRecord(String id) {
+    public record IdRecord(String id) {
         public static final IdRecord NULL_ID = new IdRecord();
 
         public IdRecord() {
@@ -374,7 +416,7 @@ public class Records {
         }
     }
 
-    public static record RecordBodyDeclaration() {
+    public record RecordBodyDeclaration() {
 
         static int valStat = 10;
 
@@ -461,7 +503,7 @@ public class Records {
         }
     }
 
-    static record Foo(int[] ints) {
+    record Foo(int[] ints) {
 
         @Override
         public String toString() {
@@ -501,7 +543,7 @@ public class Records {
         }
     }
 
-    static record WorldRecord(List<Integer> ints) {
+    record WorldRecord(List<Integer> ints) {
     }
 
     private record Cyclic(Cyclic cycle) implements Serializable {
@@ -580,65 +622,10 @@ public class Records {
         }
     }
 
-    public class Student {
-        String name;
-        int age;
-        double timeSpent;
-
-        public Student(String name, int age, double timeSpent) {
-            this.name = name;
-            this.age = age;
-            this.timeSpent = timeSpent;
-        }
-    }
-
-    // constructor parameter names for records
-    // https://stackoverflow.com/questions/67038058/java-record-cannot-get-parameter-names-from-constructors
-    public static void constructorParametersOfRecords() {
-        var recordTest2 = new RecordConstructors(1, 2, 3.0, LocalDateTime.now());
-        Class<?> objectClass = recordTest2.getClass();
-        Constructor<?>[] constructors = objectClass.getConstructors();
-        for (Constructor<?> con : constructors) {
-            System.out.println(con.getName());
-            Parameter[] parameters = con.getParameters();
-            for (Parameter parameter : parameters) {
-                System.out.printf("param: %s\n", parameter.getName());
-            }
-        }
-    }
-
     public record RecordConstructors(int id, int something, double total, LocalDateTime createdOn) {
 
         public RecordConstructors(int id, int something, double total) {
             this(id, something, total, LocalDateTime.now());
-        }
-    }
-
-    // if there be a need to identify the canonical constructor of a record for initialisation of serialisation purpose
-    // one can try to find the constructor using either of the following code
-    // https://stackoverflow.com/questions/67126109/is-there-a-way-to-recognise-a-java-16-records-canonical-constructor
-    public static void canonicalConstructorOfRecord() {
-        Class<?>[] componentTypes = Arrays.stream(Canonical.class.getRecordComponents())
-                .map(RecordComponent::getType)
-                .toArray(Class<?>[]::new);
-
-        Constructor<?> canonicalConstructor = Arrays.stream(Canonical.class.getDeclaredConstructors())
-                .filter(c -> Arrays.equals(c.getParameterTypes(), componentTypes))
-                .findFirst()
-                .orElseThrow();
-
-        System.out.println(canonicalConstructor);
-    }
-
-    static <T> Constructor<T> canonicalConstructorOfRecord(Class<T> recordClass)
-            throws NoSuchMethodException, SecurityException {
-        if (recordClass.isRecord()) {
-            Class<?>[] componentTypes = Arrays.stream(recordClass.getRecordComponents())
-                    .map(RecordComponent::getType)
-                    .toArray(Class<?>[]::new);
-            return recordClass.getDeclaredConstructor(componentTypes);
-        } else {
-            throw new IllegalArgumentException("The class is not a record.");
         }
     }
 
@@ -653,6 +640,18 @@ public class Records {
 
         Canonical(String i, String j) {
             this(Integer.parseInt(i), Integer.parseInt(j));
+        }
+    }
+
+    public class Student {
+        String name;
+        int age;
+        double timeSpent;
+
+        public Student(String name, int age, double timeSpent) {
+            this.name = name;
+            this.age = age;
+            this.timeSpent = timeSpent;
         }
     }
 }

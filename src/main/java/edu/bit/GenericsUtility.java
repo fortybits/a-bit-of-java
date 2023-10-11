@@ -46,6 +46,59 @@ public class GenericsUtility {
         return (L, R) -> c.compare(L.getS(), R.getS());
     }
 
+    private static void f(int ordinal) {
+        System.out.println("f");
+    }
+
+    public void genericsWithCollections() {
+        // interesting generics
+        SortedSet<int[]> all = new TreeSet<>((a, b) -> {
+            if (a[0] == b[0]) {
+                return Integer.compare(a[1], b[1]);
+            } else {
+                return Integer.compare(a[0], b[0]);
+            }
+        });
+    }
+
+    // example of more generics implementation witth enums and intersection allowed
+    private <T extends Enum<T> & InterfaceA> void moreGenerics(Class<T> type) {
+        Map<String, Class<T>> filter = new HashMap<>();
+        filter.put("a", type);
+        importSettingViaEnum(filter.get("a"));
+    }
+
+    private <T extends Enum<T> & InterfaceA> void importSettingViaEnum(Class<? extends T> clazz) {
+        for (T elem : clazz.getEnumConstants()) {
+            f(elem.ordinal());
+            elem.foo();
+        }
+    }
+
+    // generic utility for sorting any Map by keys and then by values
+    public <T, K extends Comparable<K>> void sortAMapByKeyThenValues(Map<T, List<K>> yourMap) {
+        Map<T, List<K>> sortedByKey = new TreeMap<>(yourMap);
+        sortedByKey.values().forEach(Collections::sort);
+    }
+
+    public enum EnumA implements InterfaceA {
+        RED();
+
+        public Object[] foo() {
+            System.out.println("g");
+            return null;
+        }
+    }
+
+    public enum EnumB implements InterfaceA {
+        OAK();
+
+        public Object[] foo() {
+            System.out.println("g");
+            return null;
+        }
+    }
+
 
     public interface BaseLookup<Id extends Serializable, T extends BaseEntity<Id>> {
         T findById(Id id);
@@ -61,6 +114,29 @@ public class GenericsUtility {
         F getF();
 
         S getS();
+    }
+
+    public interface Checker<A, B> extends BiFunction<Checker.CheckRequest<A>, Function<A, B>, Checker.CheckResponse<B>> {
+
+        default B execute(A req) {
+            CheckRequest<A> chkReq = new CheckRequest<>(req);
+            Function<A, B> op = a -> null;
+            Checker<A, B> checker = (aCheckRequest, abFunction) -> new CheckResponse<>();
+            return checker.apply(chkReq, op).operationResponse();
+        }
+
+        record CheckResponse<B>(B operationResponse) {
+            public CheckResponse() {
+                this(null);
+            }
+        }
+
+        record CheckRequest<A>(A operationRequest) {
+        }
+    }
+
+    public interface InterfaceA {
+        Object[] foo();
     }
 
     public static class Helper {
@@ -102,82 +178,5 @@ public class GenericsUtility {
         }
 
         // also has hashCode() and equals() methods to be based on id
-    }
-
-
-    public void genericsWithCollections() {
-        // interesting generics
-        SortedSet<int[]> all = new TreeSet<>((a, b) -> {
-            if (a[0] == b[0]) {
-                return Integer.compare(a[1], b[1]);
-            } else {
-                return Integer.compare(a[0], b[0]);
-            }
-        });
-    }
-
-    public static interface Checker<A, B> extends BiFunction<Checker.CheckRequest<A>, Function<A, B>, Checker.CheckResponse<B>> {
-
-        default B execute(A req) {
-            CheckRequest<A> chkReq = new CheckRequest<>(req);
-            Function<A, B> op = a -> null;
-            Checker<A, B> checker = (aCheckRequest, abFunction) -> new CheckResponse<>();
-            return checker.apply(chkReq, op).operationResponse();
-        }
-
-        record CheckResponse<B>(B operationResponse) {
-            public CheckResponse() {
-                this(null);
-            }
-        }
-
-        record CheckRequest<A>(A operationRequest) {
-        }
-    }
-
-    // example of more generics implementation witth enums and intersection allowed
-    private <T extends Enum<T> & InterfaceA> void moreGenerics(Class<T> type) {
-        Map<String, Class<T>> filter = new HashMap<>();
-        filter.put("a", type);
-        importSettingViaEnum(filter.get("a"));
-    }
-
-    private static void f(int ordinal) {
-        System.out.println("f");
-    }
-
-    private <T extends Enum<T> & InterfaceA> void importSettingViaEnum(Class<? extends T> clazz) {
-        for (T elem : clazz.getEnumConstants()) {
-            f(elem.ordinal());
-            elem.foo();
-        }
-    }
-
-    public enum EnumA implements InterfaceA {
-        RED();
-
-        public Object[] foo() {
-            System.out.println("g");
-            return null;
-        }
-    }
-
-    public enum EnumB implements InterfaceA {
-        OAK();
-
-        public Object[] foo() {
-            System.out.println("g");
-            return null;
-        }
-    }
-
-    public interface InterfaceA {
-        Object[] foo();
-    }
-
-    // generic utility for sorting any Map by keys and then by values
-    public <T, K extends Comparable<K>> void sortAMapByKeyThenValues(Map<T, List<K>> yourMap) {
-        Map<T, List<K>> sortedByKey = new TreeMap<>(yourMap);
-        sortedByKey.values().forEach(Collections::sort);
     }
 }

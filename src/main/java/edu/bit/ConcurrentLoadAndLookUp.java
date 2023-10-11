@@ -10,27 +10,16 @@ import java.util.stream.IntStream;
 
 public class ConcurrentLoadAndLookUp {
 
-    static class Document {
-        String id;
-
-        Document(String id) {
-            this.id = id;
-        }
-    }
-
+    public static final int TOTAL_DOCUMENTS = 1000;
     private static final ScheduledExecutorService loadFirstDocuments = Executors.newScheduledThreadPool(1);
     private static final ScheduledExecutorService loadSecondDocuments = Executors.newScheduledThreadPool(1);
     private static final ScheduledExecutorService updateDocuments = Executors.newScheduledThreadPool(1);
-
-    private static Map<String, Document> firstRegistry = new ConcurrentHashMap<>();
-    private static Map<String, Document> secondRegistry = new ConcurrentHashMap<>();
-    private static List<Document> documents = new ArrayList<>();
-
-    public static final int TOTAL_DOCUMENTS = 1000;
     static long calls;
     static long firstMiss;
     static long secondMiss;
-
+    private static Map<String, Document> firstRegistry = new ConcurrentHashMap<>();
+    private static final Map<String, Document> secondRegistry = new ConcurrentHashMap<>();
+    private static List<Document> documents = new ArrayList<>();
 
     public static void main(String[] args) {
         documents = IntStream.range(0, TOTAL_DOCUMENTS)
@@ -97,5 +86,13 @@ public class ConcurrentLoadAndLookUp {
             secondMiss++;
         }
         return Optional.ofNullable(secondRegistry.get(id));
+    }
+
+    static class Document {
+        String id;
+
+        Document(String id) {
+            this.id = id;
+        }
     }
 }

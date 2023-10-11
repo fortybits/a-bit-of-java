@@ -23,8 +23,7 @@ public class PatternMatching {
         } else if (obj instanceof Double) {
             double d = (Double) obj;
             formatted = String.format("double %f", d);
-        } else if (obj instanceof String) {
-            String s = (String) obj;
+        } else if (obj instanceof String s) {
             formatted = String.format("String %s", s);
         }
 

@@ -8,13 +8,6 @@ import java.util.stream.Stream;
 
 public class LazyInvocationUnderStreamsAsConsumer {
 
-    static final record A(int id) {
-        A {
-            System.out.printf("Constructing with %d!\n", id);
-        }
-    }
-
-
     void intermediateStreamCreatedBySupplier() {
         Supplier<List<A>> supplierOfA = this::getAList;
         Stream.of(supplierOfA).map(Supplier::get).flatMap(Collection::stream);
@@ -43,5 +36,11 @@ public class LazyInvocationUnderStreamsAsConsumer {
 
     List<A> getAList() {
         return List.of(new A(0), new A(1), new A(2));
+    }
+
+    record A(int id) {
+        A {
+            System.out.printf("Constructing with %d!\n", id);
+        }
     }
 }

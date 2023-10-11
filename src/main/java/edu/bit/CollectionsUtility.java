@@ -7,6 +7,24 @@ import java.util.stream.Stream;
 
 public class CollectionsUtility {
 
+    private static <T> Set<T> distinct(Collection<? extends T> list, Comparator<? super T> comparator) {
+        Set<T> set = new TreeSet<>(comparator);
+        set.addAll(list);
+        return set;
+    }
+
+    public static boolean isAllEmptyOrNull(Collection... collectionList) {
+        return Arrays.stream(collectionList).allMatch(Collection::isEmpty);
+    }
+
+    public static boolean isAllEmptyOrNull(Map... maps) {
+        return Arrays.stream(maps).allMatch(Map::isEmpty);
+    }
+
+    public static boolean collectionIsNullOrEmpty(Stream<Collection> collectionStream) {
+        return collectionStream.anyMatch(item -> item == null || item.isEmpty());
+    }
+
     // With the introduction of the List.of APIs the confusion as to how do they differ from the existing
     // Arrays.asList APIs could be sought here. The discussions most relevant to it could be found at
     // https://stackoverflow.com/questions/46579074/what-is-the-difference-between-list-of-and-arrays-aslist
@@ -38,25 +56,6 @@ public class CollectionsUtility {
 
         List<Integer> anotherListContains = List.of(1, 2, 3);
         anotherListContains.contains(null); // Throws NullPointerException
-    }
-
-    private static <T> Set<T> distinct(Collection<? extends T> list, Comparator<? super T> comparator) {
-        Set<T> set = new TreeSet<>(comparator);
-        set.addAll(list);
-        return set;
-    }
-
-    public static boolean isAllEmptyOrNull(Collection... collectionList) {
-        return Arrays.stream(collectionList).allMatch(Collection::isEmpty);
-    }
-
-    public static boolean isAllEmptyOrNull(Map... maps) {
-        return Arrays.stream(maps).allMatch(Map::isEmpty);
-    }
-
-
-    public static boolean collectionIsNullOrEmpty(Stream<Collection> collectionStream) {
-        return collectionStream.anyMatch(item -> item == null || item.isEmpty());
     }
 
     void iterateInReverse() {

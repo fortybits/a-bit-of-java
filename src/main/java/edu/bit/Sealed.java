@@ -16,6 +16,20 @@ public class Sealed {
         void bar();
     }
 
+    sealed interface Node {
+        record ConstNode(int i) implements Node {
+        }
+
+        record NegNode(Node n) implements Node {
+        }
+
+        record AddNode(Node left, Node right) implements Node {
+        }
+
+        record MultiNode(Node left, Node right) implements Node {
+        }
+    }
+
     static abstract sealed class Some implements Int permits Integral {
         public void foo() {
             System.out.println("sealed some");
@@ -40,20 +54,6 @@ public class Sealed {
     }
 
     public final class B extends A implements Serializable {
-    }
-
-    sealed interface Node {
-        record ConstNode(int i) implements Node {
-        }
-
-        record NegNode(Node n) implements Node {
-        }
-
-        record AddNode(Node left, Node right) implements Node {
-        }
-
-        record MultiNode(Node left, Node right) implements Node {
-        }
     }
 //    int eval(Node n) {
 //        return switch (n) {

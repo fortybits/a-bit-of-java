@@ -10,14 +10,8 @@ import java.util.stream.Stream;
 
 public class FunctionUtility {
 
-    public void compositeFunctions() {
-        Function<Integer, Integer> add = x -> x + 2;
-        Function<Integer, Integer> sub = x -> x - 2;
-        Function<Integer, Integer> div = x -> x / 2;
-        Function<Integer, Integer> mul = x -> x * 2;
-        Function<Integer, Integer> function = add.andThen(sub).andThen(div).andThen(mul);
-        System.out.println(function.apply(2));
-    }
+    // transform a string based on a custom function defined
+    private static final String MARKER = "| ";
 
     public static void main(String[] args) {
         BinaryOperator<Integer> foo = (a, b) -> a * a + b * b;
@@ -84,11 +78,170 @@ public class FunctionUtility {
         return (a, b) -> Objects.equals(a, b) ? a : b;
     }
 
-    interface ThreeConsumer<T, U, V> {
-        void accept(T t, U u, V v);
+    public static Consumer<String> asMethodRefFromStaticMethodStringConsumer() {
+        return FunctionUtility::print;
     }
 
-    record XYZProfile(String name, Integer code) {
+    public static void print(String string) {
+        System.out.println(string);
+    }
+
+    public static Consumer<String> asLambdaPrintStringConsumer() {
+        return x -> System.out.println(x);
+    }
+
+    public static Consumer<String> asMethodRefPrintStringConsumer() {
+        return System.out::println;
+    }
+
+    private static <R> R call(Closure<R> closure) {
+        return closure.apply();
+    }
+
+    private static void call(VoidClosure closure) throws UnknownHostException {
+        call(() -> {
+            closure.apply();
+            return null;
+        });
+    }
+
+    private static <T> void myMethod(Object data) {
+        System.out.println(data);
+    }
+
+    public void compositeFunctions() {
+        Function<Integer, Integer> add = x -> x + 2;
+        Function<Integer, Integer> sub = x -> x - 2;
+        Function<Integer, Integer> div = x -> x / 2;
+        Function<Integer, Integer> mul = x -> x * 2;
+        Function<Integer, Integer> function = add.andThen(sub).andThen(div).andThen(mul);
+        System.out.println(function.apply(2));
+    }
+
+    // references for equivalent of System.out::print as discussed in
+    // https://stackoverflow.com/questions/58920215/why-functional-interface-initialize-like-singleton
+    // and also relevant https://stackoverflow.com/questions/28023364/what-is-the-equivalent-lambda-expression
+    public void comparingConsumersFormedByMethodReferenceAndLambda() {
+        Consumer<String> consumerA = asLambdaPrintStringConsumer();
+        Consumer<String> consumerB = asLambdaPrintStringConsumer();
+
+
+        Consumer<String> consumerA2 = s -> System.out.println(s);
+        Consumer<String> consumerB2 = s -> System.out.println(s);
+
+
+        Consumer<String> consumerA3 = asMethodRefPrintStringConsumer();
+        Consumer<String> consumerB3 = asMethodRefPrintStringConsumer();
+
+        Consumer<String> consumerA4 = asMethodRefFromStaticMethodStringConsumer();
+        Consumer<String> consumerB4 = asMethodRefFromStaticMethodStringConsumer();
+
+
+        System.out.println(consumerA.equals(consumerB));
+        System.out.println(consumerA2.equals(consumerB2));
+        System.out.println(consumerA3.equals(consumerB3));
+        System.out.println(consumerA4.equals(consumerB4));
+    }
+
+    private String stripMargin(String string) {
+        return string.lines().map(String::strip)
+                .map(s -> s.startsWith(MARKER) ? s.substring(MARKER.length()) : s)
+                .collect(Collectors.joining("\n", "", "\n"));
+    }
+
+    public void transformUsingCustomisedMargin() {
+        String stripped = """
+                    | The content of
+                    | the string
+                """;
+        System.out.print(stripped.transform(this::stripMargin));
+        //    Output:
+        //    The content of
+        //    the string
+    }
+
+    /**
+     * discussed in https://stackoverflow.com/questions/48227496
+     * error: reference to ok is ambiguous
+     * return ok(() -> System.out.append("aaa"));
+     * ^
+     * both method <T#1>ok(Supplier<T#1>) in Q48227496 and method <T#2>ok(Procedure) in Q48227496 match
+     * where T#1,T#2 are type-variables:
+     * T#1 extends Object declared in method <T#1>ok(Supplier<T#1>)
+     * T#2 extends Object declared in method <T#2>ok(Procedure)
+     * <p>
+     * registered as a bug https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8195598
+     */
+    public A<?> ambiguousReferencesInJava9() {
+        return ok(() -> System.out.append("aaa")); // fixed in Java11 and above
+    }
+
+    private <T> A<T> ok(java.util.function.Supplier<T> action) {
+        return new A<>();
+    }
+
+    public <T> A<T> ok(T body) {
+        return new A<>();
+    }
+
+    private <T> A<T> ok(Procedure action) {
+        return new A<>();
+    }
+
+    public <T> A<T> ok() {
+        return new A<>();
+    }
+
+    /**
+     * the compiler issued an error in the following code:
+     * incompatible types: inference variable R has incompatible bounds
+     * https://stackoverflow.com/questions/47260727
+     * http://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8191290
+     */
+    public void incompatibleTypesIssueWithJava9() throws UnknownHostException {
+        call(() -> myMethod("hello")); //compile error in jdk9
+    }
+
+    //
+    public void referenceVariableCaptured() {
+        Thread t = Thread.currentThread();
+        Runnable run = new Runnable() {
+            @Override
+            public void run() {
+                Thread.yield();
+            }
+        };
+        Runnable run2 = Thread::yield;
+        run.run();
+        run2.run();
+    }
+
+    // a common method to transform key, value and both for an input map
+    public <K, V, RK, RV> Map<RK, RV> transformMap(Map<K, V> input,
+                                                   Function<K, RK> keyTransformer,
+                                                   Function<V, RV> valueTransformer) {
+        return input.entrySet().stream()
+                .collect(Collectors.toMap(e -> keyTransformer.apply(e.getKey()),
+                        e -> valueTransformer.apply(e.getValue())));
+    }
+
+    public void transformSuppliersIntoOne(List<Supplier<String>> writtenLines) {
+        Supplier<String> combined = () -> new StringJoiner(", ")
+                .add(writtenLines.get(0).get())
+                .add(writtenLines.get(1).get())
+                .add(writtenLines.get(2).get())
+                .toString();
+        // effectively for joining string suppliers
+        Supplier<String> ac = () -> writtenLines.stream()
+                .map(Supplier::get)
+                .collect(Collectors.joining(", "));
+
+        System.out.println(combined.get());
+        //output: "String, String, String"
+    }
+
+    interface ThreeConsumer<T, U, V> {
+        void accept(T t, U u, V v);
     }
 
     @FunctionalInterface
@@ -101,6 +254,80 @@ public class FunctionUtility {
 
         default void method(E e, Function<E, T> function) {
         }
+    }
+
+
+    // the problem statement of exposing an API to clients to call with chained consumers with guaranteed order
+    // of processing as detailed in https://stackoverflow.com/questions/59883961
+    public interface ConsumerChaining<T> {
+
+        Consumer<T> start();
+
+        Consumer<T> performDailyAggregates();
+
+        Consumer<T> performLastNDaysAggregates();
+
+        Consumer<T> repopulateScores();
+
+        Consumer<T> updateDataStore();
+
+        private void performAllTasks(T data) {
+            start().andThen(performDailyAggregates())
+                    .andThen(performLastNDaysAggregates())
+                    .andThen(repopulateScores())
+                    .andThen(updateDataStore())
+                    .accept(data);
+        }
+
+        default Consumer<T> NOOP() {
+            return t -> {
+            };
+        }
+
+        private void performAllTasks(Stream<Consumer<T>> consumerList, T data) {
+            consumerList.reduce(NOOP(), Consumer::andThen).accept(data);
+        }
+
+        private void performAllTasks(List<Consumer<T>> consumerList, T data) {
+            consumerList.stream().reduce(NOOP(), Consumer::andThen).accept(data);
+        }
+    }
+
+    @FunctionalInterface
+    public interface Procedure {
+        void invoke();
+    }
+
+    @FunctionalInterface
+    public interface Closure<R> {
+        R apply();
+    }
+
+    @FunctionalInterface
+    public interface VoidClosure {
+        void apply();
+    }
+
+    // what all methods can functional interface still override
+    @FunctionalInterface
+    public interface Sayable {
+        void say(String msg); //abstract method
+
+        //It can contain any number of Object class methods.
+        int hashCode();
+
+        String toString();
+
+        boolean equals(Object obj);
+    }
+
+    //
+    @FunctionalInterface
+    public interface NAryFunction<T, R> {
+        R apply(T... t);
+    }
+
+    record XYZProfile(String name, Integer code) {
     }
 
     public static class ComplexFunctions {
@@ -145,8 +372,7 @@ public class FunctionUtility {
 
             @Override
             public boolean equals(Object obj) {
-                if (obj instanceof FunctionComposition) {
-                    FunctionComposition<?, ?, ?> that = (FunctionComposition<?, ?, ?>) obj;
+                if (obj instanceof FunctionComposition<?, ?, ?> that) {
                     return f.equals(that.f) && g.equals(that.g);
                 }
                 return false;
@@ -162,105 +388,6 @@ public class FunctionUtility {
                 return g + "(" + f + ")";
             }
         }
-    }
-
-
-    // the problem statement of exposing an API to clients to call with chained consumers with guaranteed order
-    // of processing as detailed in https://stackoverflow.com/questions/59883961
-    public interface ConsumerChaining<T> {
-
-        Consumer<T> start();
-
-        Consumer<T> performDailyAggregates();
-
-        Consumer<T> performLastNDaysAggregates();
-
-        Consumer<T> repopulateScores();
-
-        Consumer<T> updateDataStore();
-
-        private void performAllTasks(T data) {
-            start().andThen(performDailyAggregates())
-                    .andThen(performLastNDaysAggregates())
-                    .andThen(repopulateScores())
-                    .andThen(updateDataStore())
-                    .accept(data);
-        }
-
-        default Consumer<T> NOOP() {
-            return t -> {
-            };
-        }
-
-        private void performAllTasks(Stream<Consumer<T>> consumerList, T data) {
-            consumerList.reduce(NOOP(), Consumer::andThen).accept(data);
-        }
-
-        private void performAllTasks(List<Consumer<T>> consumerList, T data) {
-            consumerList.stream().reduce(NOOP(), Consumer::andThen).accept(data);
-        }
-    }
-
-    // references for equivalent of System.out::print as discussed in
-    // https://stackoverflow.com/questions/58920215/why-functional-interface-initialize-like-singleton
-    // and also relevant https://stackoverflow.com/questions/28023364/what-is-the-equivalent-lambda-expression
-    public void comparingConsumersFormedByMethodReferenceAndLambda() {
-        Consumer<String> consumerA = asLambdaPrintStringConsumer();
-        Consumer<String> consumerB = asLambdaPrintStringConsumer();
-
-
-        Consumer<String> consumerA2 = s -> System.out.println(s);
-        Consumer<String> consumerB2 = s -> System.out.println(s);
-
-
-        Consumer<String> consumerA3 = asMethodRefPrintStringConsumer();
-        Consumer<String> consumerB3 = asMethodRefPrintStringConsumer();
-
-        Consumer<String> consumerA4 = asMethodRefFromStaticMethodStringConsumer();
-        Consumer<String> consumerB4 = asMethodRefFromStaticMethodStringConsumer();
-
-
-        System.out.println(consumerA.equals(consumerB));
-        System.out.println(consumerA2.equals(consumerB2));
-        System.out.println(consumerA3.equals(consumerB3));
-        System.out.println(consumerA4.equals(consumerB4));
-    }
-
-
-    public static Consumer<String> asMethodRefFromStaticMethodStringConsumer() {
-        return FunctionUtility::print;
-    }
-
-    public static void print(String string) {
-        System.out.println(string);
-    }
-
-    public static Consumer<String> asLambdaPrintStringConsumer() {
-        return x -> System.out.println(x);
-    }
-
-    public static Consumer<String> asMethodRefPrintStringConsumer() {
-        return System.out::println;
-    }
-
-    // transform a string based on a custom function defined
-    private static final String MARKER = "| ";
-
-    private String stripMargin(String string) {
-        return string.lines().map(String::strip)
-                .map(s -> s.startsWith(MARKER) ? s.substring(MARKER.length()) : s)
-                .collect(Collectors.joining("\n", "", "\n"));
-    }
-
-    public void transformUsingCustomisedMargin() {
-        String stripped = """
-                    | The content of
-                    | the string
-                """;
-        System.out.print((String) stripped.transform(this::stripMargin));
-        //    Output:
-        //    The content of
-        //    the string
     }
 
     // this in particular is a design use case to make the conversion to list as generic as possible
@@ -288,115 +415,6 @@ public class FunctionUtility {
         }
     }
 
-    /**
-     * discussed in https://stackoverflow.com/questions/48227496
-     * error: reference to ok is ambiguous
-     * return ok(() -> System.out.append("aaa"));
-     * ^
-     * both method <T#1>ok(Supplier<T#1>) in Q48227496 and method <T#2>ok(Procedure) in Q48227496 match
-     * where T#1,T#2 are type-variables:
-     * T#1 extends Object declared in method <T#1>ok(Supplier<T#1>)
-     * T#2 extends Object declared in method <T#2>ok(Procedure)
-     * <p>
-     * registered as a bug https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8195598
-     */
-    public A<?> ambiguousReferencesInJava9() {
-        return ok(() -> System.out.append("aaa")); // fixed in Java11 and above
-    }
-
-    private <T> A<T> ok(java.util.function.Supplier<T> action) {
-        return new A<>();
-    }
-
-    public <T> A<T> ok(T body) {
-        return new A<>();
-    }
-
-    private <T> A<T> ok(Procedure action) {
-        return new A<>();
-    }
-
-    public <T> A<T> ok() {
-        return new A<>();
-    }
-
-    @FunctionalInterface
-    public interface Procedure {
-        void invoke();
-    }
-
-    private class A<T> {
-    }
-
-    /**
-     * the compiler issued an error in the following code:
-     * incompatible types: inference variable R has incompatible bounds
-     * https://stackoverflow.com/questions/47260727
-     * http://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8191290
-     */
-    public void incompatibleTypesIssueWithJava9() throws UnknownHostException {
-        call(() -> myMethod("hello")); //compile error in jdk9
-    }
-
-
-    private static <R> R call(Closure<R> closure) {
-        return closure.apply();
-    }
-
-    private static void call(VoidClosure closure) throws UnknownHostException {
-        call(() -> {
-            closure.apply();
-            return null;
-        });
-    }
-
-    private static <T> void myMethod(Object data) {
-        System.out.println(data);
-    }
-
-    @FunctionalInterface
-    public interface Closure<R> {
-        R apply();
-    }
-
-    @FunctionalInterface
-    public interface VoidClosure {
-        void apply();
-    }
-
-    // what all methods can functional interface still override
-    @FunctionalInterface
-    public interface Sayable {
-        void say(String msg); //abstract method
-
-        //It can contain any number of Object class methods.
-        int hashCode();
-
-        String toString();
-
-        boolean equals(Object obj);
-    }
-
-    //
-    public void referenceVariableCaptured() {
-        Thread t = Thread.currentThread();
-        Runnable run = new Runnable() {
-            @Override
-            public void run() {
-                Thread.yield();
-            }
-        };
-        Runnable run2 = Thread::yield;
-        run.run();
-        run2.run();
-    }
-
-    //
-    @FunctionalInterface
-    public interface NAryFunction<T, R> {
-        R apply(T... t);
-    }
-
     //
     static class ImpFunctInterface {
         public static void main(String[] args) {
@@ -413,27 +431,6 @@ public class FunctionUtility {
         }
     }
 
-    // a common method to transform key, value and both for an input map
-    public <K, V, RK, RV> Map<RK, RV> transformMap(Map<K, V> input,
-                                                   Function<K, RK> keyTransformer,
-                                                   Function<V, RV> valueTransformer) {
-        return input.entrySet().stream()
-                .collect(Collectors.toMap(e -> keyTransformer.apply(e.getKey()),
-                        e -> valueTransformer.apply(e.getValue())));
-    }
-
-    public void transformSuppliersIntoOne(List<Supplier<String>> writtenLines) {
-        Supplier<String> combined = () -> new StringJoiner(", ")
-                .add(writtenLines.get(0).get())
-                .add(writtenLines.get(1).get())
-                .add(writtenLines.get(2).get())
-                .toString();
-        // effectively for joining string suppliers
-        Supplier<String> ac = () -> writtenLines.stream()
-                .map(Supplier::get)
-                .collect(Collectors.joining(", "));
-
-        System.out.println(combined.get());
-        //output: "String, String, String"
+    private class A<T> {
     }
 }

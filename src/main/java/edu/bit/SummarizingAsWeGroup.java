@@ -38,10 +38,25 @@ public class SummarizingAsWeGroup {
         summarise(students);
     }
 
+    static void summarise(List<Student> stList) {
+        Map<String, LinkedHashMap<String, Double>> branchStudentsSortedOnMarks = stList.stream()
+                .sorted(Comparator.comparingDouble(s -> s.getSubject().getAverageMarks()))
+                .collect(Collectors.groupingBy(Student::getBranch, LinkedHashMap::new,
+                        Collectors.collectingAndThen(
+                                Collectors.toMap(Student::getFirstName,
+                                        s -> s.getSubject().getAverageMarks(), Double::max),
+                                m -> m.entrySet().stream()
+                                        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                                        .collect(Collectors.toMap(Map.Entry::getKey,
+                                                Map.Entry::getValue, (a, b) -> b, LinkedHashMap::new))
+                        )));
+        System.out.println(branchStudentsSortedOnMarks);
+    }
+
     static class SqlResult {
-        private String key1;
-        private String key2;
-        private int val;
+        private final String key1;
+        private final String key2;
+        private final int val;
 
         public SqlResult(String key1, String key2, int val) {
             this.key1 = key1;
@@ -63,10 +78,10 @@ public class SummarizingAsWeGroup {
     }
 
     static class Result {
-        private String key1;
-        private String key2;
-        private Double avgVal;
-        private Long count;
+        private final String key1;
+        private final String key2;
+        private final Double avgVal;
+        private final Long count;
 
         public Result(String key1, String key2, Double avgVal, Long count) {
             this.key1 = key1;
@@ -77,8 +92,9 @@ public class SummarizingAsWeGroup {
     }
 
     static class Student {
-        private String firstName, branch;
-        private SubjectMarks subject;
+        private final String firstName;
+        private final String branch;
+        private final SubjectMarks subject;
 
         public Student(String firstName, String branch, SubjectMarks subject) {
             this.firstName = firstName;
@@ -124,20 +140,5 @@ public class SummarizingAsWeGroup {
         public double getAverageMarks() {
             return (getBiology() + getMaths() + getComputers()) / 3;
         }
-    }
-
-    static void summarise(List<Student> stList) {
-        Map<String, LinkedHashMap<String, Double>> branchStudentsSortedOnMarks = stList.stream()
-                .sorted(Comparator.comparingDouble(s -> s.getSubject().getAverageMarks()))
-                .collect(Collectors.groupingBy(Student::getBranch, LinkedHashMap::new,
-                        Collectors.collectingAndThen(
-                                Collectors.toMap(Student::getFirstName,
-                                        s -> s.getSubject().getAverageMarks(), Double::max),
-                                m -> m.entrySet().stream()
-                                        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
-                                        .collect(Collectors.toMap(Map.Entry::getKey,
-                                                Map.Entry::getValue, (a, b) -> b, LinkedHashMap::new))
-                        )));
-        System.out.println(branchStudentsSortedOnMarks);
     }
 }

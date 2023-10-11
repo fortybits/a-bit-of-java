@@ -75,7 +75,7 @@ public class RemoveDuplicatesEmails {
 
         Set<String> distinctEmails = new HashSet<>();
         try (FileInputStream inputStream = new FileInputStream(inputFileName);
-             Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8.name());
+             Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8);
              FileWriter writer = new FileWriter(outputFileName)) {
             while (sc.hasNextLine()) {
                 String line = sc.nextLine();

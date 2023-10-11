@@ -10,16 +10,6 @@ import java.util.stream.Stream;
 public class CollectorsUtility {
 
 
-    public Map.Entry<Map<Integer, BigDecimal>, List<BigDecimal>> teeingSample(Map<Integer, BigDecimal> data,
-                                                                              Function<BigDecimal, BigDecimal> func1,
-                                                                              Function<BigDecimal, BigDecimal> func2) {
-        return data.entrySet().stream()
-                .collect(Collectors.teeing(
-                        Collectors.toMap(Map.Entry::getKey, i -> func1.apply(i.getValue())),
-                        Collectors.mapping(i -> func1.andThen(func2).apply(i.getValue()), Collectors.toList()),
-                        Map::entry));
-    }
-
     // custom implementation of the teeing collector before the API was introduced
     public static <T, A1, A2, R1, R2, R> Collector<T, ?, R> teeing(
             Collector<? super T, A1, R1> downstream1,
@@ -51,19 +41,10 @@ public class CollectorsUtility {
         return Collector.of(Acc::new, Acc::accumulate, Acc::combine, Acc::applyMerger);
     }
 
-
-    // implementation of a custom collector implemented below
-    record Offer(OfferType type, BigDecimal price) {
-    }
-
-    public enum OfferType {
-        STANDARD, BONUS
-    }
-
     public static Collector<Offer, ?, List<Offer>> minCollector() {
         class Acc {
             private Offer min = null;
-            private List<Offer> result = new ArrayList<>();
+            private final List<Offer> result = new ArrayList<>();
 
             private void add(Offer offer) {
                 if (offer.type() == OfferType.STANDARD) {
@@ -90,25 +71,6 @@ public class CollectorsUtility {
         }
 
         return Collector.of(Acc::new, Acc::add, Acc::combine, Acc::finisher);
-    }
-
-    void findingMinimumOffer() {
-        List<Offer> offers = Arrays.asList(new Offer(OfferType.STANDARD, BigDecimal.valueOf(10.0)),
-                new Offer(OfferType.STANDARD, BigDecimal.valueOf(20.0)),
-                new Offer(OfferType.STANDARD, BigDecimal.valueOf(30.0)),
-                new Offer(OfferType.BONUS, BigDecimal.valueOf(5.0)),
-                new Offer(OfferType.BONUS, BigDecimal.valueOf(5.0)));
-
-        Comparator<Offer> compareLeastPrice = Comparator.comparing(Offer::price);
-
-        List<Offer> some = offers.stream()
-                .filter(x -> x.type() != OfferType.STANDARD)
-                .collect(Collectors.toList());
-
-        offers.stream()
-                .filter(x -> x.type() == OfferType.STANDARD)
-                .min(Comparator.comparing(Offer::price))
-                .ifPresent(some::add);
     }
 
     static <T, U, A, R> Collector<T, ?, R> flatMapping(Function<? super T, ? extends Stream<? extends U>> mapper,
@@ -138,87 +100,6 @@ public class CollectorsUtility {
                 downstream.combiner(), downstream.finisher(),
                 downstream.characteristics().toArray(new Collector.Characteristics[0]));
     }
-
-    //
-    public void reduceUsingCustomCollector() {
-        List<List<Integer>> result = Stream.of(1, 2, 3, 4, 2, 8)
-                .collect(Collector.of(
-                        ArrayList::new,
-                        (list, elem) -> {
-                            if (list.isEmpty()) {
-                                List<Integer> inner = new ArrayList<>();
-                                inner.add(elem);
-                                list.add(inner);
-                            } else {
-                                if (elem == 2) {
-                                    list.add(new ArrayList<>());
-                                } else {
-                                    List<Integer> last = list.get(list.size() - 1);
-                                    last.add(elem);
-                                }
-                            }
-                        },
-                        (left, right) -> {
-                            // This is the real question here:
-                            // can left or right be empty here?
-                            return left;
-                        }));
-    }
-
-    // the requirement as posed on the community was to find an equivalent of 'having' command in collectors
-    // https://stackoverflow.com/questions/61396147/
-    public static class SQLHavingCollector {
-
-        private static void solve(List<Item> input) {
-            Map<String, List<Item>> initial = input.stream()
-                    .collect(Collectors.groupingBy(Item::id))
-                    .entrySet()
-                    .stream()
-                    .filter(entry -> entry.getValue().size() > 5)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            Map<String, List<Item>> andThen = input.stream()
-                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::id),
-                            map -> map.entrySet().stream()
-                                    .filter(e -> e.getValue().size() > 5)
-                                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
-
-            Map<String, Long> sqlCount = input.stream()
-                    .collect(Collectors.groupingBy(Item::id, Collectors.counting()));
-            Map<String, List<Item>> sqlGroupHavingCount = input.stream().filter(i -> sqlCount.get(i.id()) > 5)
-                    .collect(Collectors.groupingBy(Item::id));
-
-        }
-
-        private static void main(String... args) {
-            List<Item> input = new ArrayList<>();
-            Map<String, List<Item>> andThenAgain = input.stream()
-                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::id,
-                            HashMap::new, Collectors.toList()),
-                            m -> {
-                                m.values().removeIf(l -> l.size() <= 5);
-                                return m;
-                            }));
-
-            Map<String, List<Item>> result = input.stream()
-                    .collect(having(Collectors.groupingBy(Item::id), (key, list) -> list.size() > 5));
-
-        }
-
-        public static <T, K, V> Collector<T, ?, Map<K, V>> having(
-                Collector<T, ?, ? extends Map<K, V>> c, BiPredicate<K, V> p) {
-            return Collectors.collectingAndThen(c, in -> {
-                Map<K, V> m = in;
-                if (!(m instanceof HashMap)) m = new HashMap<>(m);
-                m.entrySet().removeIf(e -> !p.test(e.getKey(), e.getValue()));
-                return m;
-            });
-        }
-
-        record Item(String id) {
-        }
-    }
-
 
     // use case of ensuring that a stream consists of only one element
     // https://stackoverflow.com/questions/22694884/filter-java-stream-to-1-and-only-1-element
@@ -274,5 +155,123 @@ public class CollectorsUtility {
                         return list1;
                     }
                 });
+    }
+
+    public Map.Entry<Map<Integer, BigDecimal>, List<BigDecimal>> teeingSample(Map<Integer, BigDecimal> data,
+                                                                              Function<BigDecimal, BigDecimal> func1,
+                                                                              Function<BigDecimal, BigDecimal> func2) {
+        return data.entrySet().stream()
+                .collect(Collectors.teeing(
+                        Collectors.toMap(Map.Entry::getKey, i -> func1.apply(i.getValue())),
+                        Collectors.mapping(i -> func1.andThen(func2).apply(i.getValue()), Collectors.toList()),
+                        Map::entry));
+    }
+
+    void findingMinimumOffer() {
+        List<Offer> offers = Arrays.asList(new Offer(OfferType.STANDARD, BigDecimal.valueOf(10.0)),
+                new Offer(OfferType.STANDARD, BigDecimal.valueOf(20.0)),
+                new Offer(OfferType.STANDARD, BigDecimal.valueOf(30.0)),
+                new Offer(OfferType.BONUS, BigDecimal.valueOf(5.0)),
+                new Offer(OfferType.BONUS, BigDecimal.valueOf(5.0)));
+
+        Comparator<Offer> compareLeastPrice = Comparator.comparing(Offer::price);
+
+        List<Offer> some = offers.stream()
+                .filter(x -> x.type() != OfferType.STANDARD)
+                .collect(Collectors.toList());
+
+        offers.stream()
+                .filter(x -> x.type() == OfferType.STANDARD)
+                .min(Comparator.comparing(Offer::price))
+                .ifPresent(some::add);
+    }
+
+    //
+    public void reduceUsingCustomCollector() {
+        List<List<Integer>> result = Stream.of(1, 2, 3, 4, 2, 8)
+                .collect(Collector.of(
+                        ArrayList::new,
+                        (list, elem) -> {
+                            if (list.isEmpty()) {
+                                List<Integer> inner = new ArrayList<>();
+                                inner.add(elem);
+                                list.add(inner);
+                            } else {
+                                if (elem == 2) {
+                                    list.add(new ArrayList<>());
+                                } else {
+                                    List<Integer> last = list.get(list.size() - 1);
+                                    last.add(elem);
+                                }
+                            }
+                        },
+                        (left, right) -> {
+                            // This is the real question here:
+                            // can left or right be empty here?
+                            return left;
+                        }));
+    }
+
+
+    public enum OfferType {
+        STANDARD, BONUS
+    }
+
+    // implementation of a custom collector implemented below
+    record Offer(OfferType type, BigDecimal price) {
+    }
+
+    // the requirement as posed on the community was to find an equivalent of 'having' command in collectors
+    // https://stackoverflow.com/questions/61396147/
+    public static class SQLHavingCollector {
+
+        private static void solve(List<Item> input) {
+            Map<String, List<Item>> initial = input.stream()
+                    .collect(Collectors.groupingBy(Item::id))
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> entry.getValue().size() > 5)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            Map<String, List<Item>> andThen = input.stream()
+                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::id),
+                            map -> map.entrySet().stream()
+                                    .filter(e -> e.getValue().size() > 5)
+                                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
+
+            Map<String, Long> sqlCount = input.stream()
+                    .collect(Collectors.groupingBy(Item::id, Collectors.counting()));
+            Map<String, List<Item>> sqlGroupHavingCount = input.stream().filter(i -> sqlCount.get(i.id()) > 5)
+                    .collect(Collectors.groupingBy(Item::id));
+
+        }
+
+        private static void main(String... args) {
+            List<Item> input = new ArrayList<>();
+            Map<String, List<Item>> andThenAgain = input.stream()
+                    .collect(Collectors.collectingAndThen(Collectors.groupingBy(Item::id,
+                                    HashMap::new, Collectors.toList()),
+                            m -> {
+                                m.values().removeIf(l -> l.size() <= 5);
+                                return m;
+                            }));
+
+            Map<String, List<Item>> result = input.stream()
+                    .collect(having(Collectors.groupingBy(Item::id), (key, list) -> list.size() > 5));
+
+        }
+
+        public static <T, K, V> Collector<T, ?, Map<K, V>> having(
+                Collector<T, ?, ? extends Map<K, V>> c, BiPredicate<K, V> p) {
+            return Collectors.collectingAndThen(c, in -> {
+                Map<K, V> m = in;
+                if (!(m instanceof HashMap)) m = new HashMap<>(m);
+                m.entrySet().removeIf(e -> !p.test(e.getKey(), e.getValue()));
+                return m;
+            });
+        }
+
+        record Item(String id) {
+        }
     }
 }

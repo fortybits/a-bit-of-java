@@ -13,12 +13,6 @@ import java.util.stream.Collectors;
  */
 public class SelectLatestBasedOnAttributeAndSumBasedOnSubset {
 
-    record Foo(Long one, String two, String three, int value, int version) {
-    }
-
-    record Result(Long one, String two, int totalValue) {
-    }
-
     List<Result> groupByAndSumToConstructBarResults(List<Foo> fooList) {
         Map<List<Object>, Foo> groupedMaxVersion = fooList.stream()
                 .collect(Collectors.toMap(foo -> Arrays.asList(foo.one(), foo.two(), foo.three()),
@@ -29,6 +23,12 @@ public class SelectLatestBasedOnAttributeAndSumBasedOnSubset {
         return resultMapping.entrySet().stream()
                 .map(e -> new Result((Long) e.getKey().get(0), (String) e.getKey().get(1), e.getValue()))
                 .collect(Collectors.toList());
+    }
+
+    record Foo(Long one, String two, String three, int value, int version) {
+    }
+
+    record Result(Long one, String two, int totalValue) {
     }
 
 }
