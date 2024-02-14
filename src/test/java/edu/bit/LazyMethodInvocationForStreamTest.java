@@ -1,6 +1,7 @@
 package edu.bit;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -13,6 +14,11 @@ class LazyMethodInvocationForStreamTest {
     @BeforeAll
     static void setup() {
         lazyMethodInvocationForStream = Mockito.mock(LazyInvocationUnderStreamsAsConsumer.class);
+    }
+
+    @BeforeEach
+    void clearMocks(){
+        Mockito.reset(lazyMethodInvocationForStream); // clears any previous invocations
     }
 
     @Test
