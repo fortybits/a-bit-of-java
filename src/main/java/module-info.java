@@ -11,6 +11,5 @@ module a.bit.of.java {
     requires jdk.management;
     requires jdk.jlink;
 
-    requires com.google.common;
     requires jdk.httpserver;
 }

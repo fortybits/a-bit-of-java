@@ -77,6 +77,6 @@ class StreamsUtilityTest {
     void testToListStreamVersusCollectors() {
         // https://stackoverflow.com/questions/4028059/calling-java-varargs-method-with-single-null-argument
         System.out.println(Stream.of(null, null).toList());
-        System.out.println(Stream.of(null).toList());
+        System.out.println(Stream.of((Object) null).toList());
     }
 }

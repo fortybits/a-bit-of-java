@@ -12,8 +12,8 @@ class WithPatternInRecordsTest {
         WithPatternInRecords.Vehicle premierVehicle = vehicle.withBrand("Umanga");
 
         Assertions.assertEquals(vehicle.brand(), ultraVehicle.brand());
+        Assertions.assertNotEquals(vehicle.licensePlate(), ultraVehicle.licensePlate());
         Assertions.assertNotEquals(vehicle.brand(), premierVehicle.brand());
-        Assertions.assertEquals(vehicle.brand(), ultraVehicle.brand());
-        Assertions.assertNotEquals(vehicle.licensePlate(), premierVehicle.licensePlate());
+        Assertions.assertEquals(vehicle.licensePlate(), premierVehicle.licensePlate());
     }
 }

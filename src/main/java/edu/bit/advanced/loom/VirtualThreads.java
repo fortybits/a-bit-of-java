@@ -19,7 +19,8 @@ public class VirtualThreads {
         }  // executor.close() is called implicitly, and waits
 
         System.out.println("Before a virtual thread! In - " + Thread.currentThread().threadId());
-        Thread.ofVirtual().start(() -> System.out.println("Inside of a virtual thread! In - " + Thread.currentThread().threadId()));
+        Thread start = Thread.ofVirtual().start(() -> System.out.println("Inside of a virtual thread! In - " + Thread.currentThread().threadId()));
+        start.join();
         System.out.println("After a virtual thread! In - " + Thread.currentThread().threadId());
 
         ThreadFactory tf = Thread.ofVirtual().factory();

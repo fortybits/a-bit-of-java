@@ -10,8 +10,8 @@ public class WithPatternInRecords {
             return new Vehicle(this.brand(), licensePlate);
         }
 
-        Vehicle withBrand(String licensePlate) {
-            return new Vehicle(this.brand(), licensePlate);
+        Vehicle withBrand(String brand) {
+            return new Vehicle(brand, this.licensePlate());
         }
     }
 }

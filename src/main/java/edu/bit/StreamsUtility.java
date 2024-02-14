@@ -1,7 +1,5 @@
 package edu.bit;
 
-import com.google.common.collect.Streams;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -760,12 +758,12 @@ public class StreamsUtility {
 
     // finding out an implementation of step average on infinite stream
     // https://stackoverflow.com/questions/67405898/given-an-infinite-sequence
-    static Stream<Double> stepAverage(Stream<Double> stream, int step) {
-        return Streams.mapWithIndex(stream, (from, index) -> Map.entry(index, from))
-                .collect(Collectors.groupingBy(e -> (e.getKey() / step), TreeMap::new,
-                        Collectors.averagingDouble(Map.Entry::getValue)))
-                .values().stream();
-    }
+//    static Stream<Double> stepAverage(Stream<Double> stream, int step) {
+//        return Streams.mapWithIndex(stream, (from, index) -> Map.entry(index, from))
+//                .collect(Collectors.groupingBy(e -> (e.getKey() / step), TreeMap::new,
+//                        Collectors.averagingDouble(Map.Entry::getValue)))
+//                .values().stream();
+//    }
 
     private List<Stake> filteredStakeForDistinctCustomer(List<Stake> stakes, int maxBetOfferId) {
         return stakes.stream()

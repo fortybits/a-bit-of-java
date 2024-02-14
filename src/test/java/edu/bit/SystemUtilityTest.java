@@ -20,7 +20,7 @@ class SystemUtilityTest {
                 "java/lang/Object.class"));
 
         // should work with java-8 as well - https://stackoverflow.com/a/66044561/1746118
-        String jdk15Home = "/Library/Java/JavaVirtualMachines/jdk-15.jdk/Contents/Home";
+        String jdk15Home = "/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home";
         FileSystem jrtFs = FileSystems.newFileSystem(
                 URI.create("jrt:/"), Map.of("java.home", jdk15Home));
         byte[] record = Files.readAllBytes(
