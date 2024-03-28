@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.StructuredTaskScope.Subtask;
+import java.util.function.Supplier;
 
 public class StructuredTaskScopeExample {
     public static void main(String[] args) {
