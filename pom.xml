@@ -11,7 +11,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.release>22</maven.compiler.release>
     </properties>
 
     <dependencies>
@@ -34,7 +34,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.12.1</version>
+                <version>3.13.0</version>
                 <configuration>
                     <fork>true</fork>
                     <compilerArgs>
@@ -43,14 +43,14 @@
                     </compilerArgs>
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>22</source>
+                    <target>22</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.1</version>
+                <version>3.5.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>

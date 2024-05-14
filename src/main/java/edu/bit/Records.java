@@ -329,6 +329,13 @@ public class Records {
     record CityRecord(Integer id, String name) {
     }
 
+    record requestBody(innerObject obj){}
+    record innerObject(String a, String b, String c){
+        public innerObject(String a) {
+            this(a, null, null);
+        }
+    }
+
     // Null object pattern for records as listed
     // in https://stackoverflow.com/questions/62799232/java-records-and-null-object-pattern
     public static class Id {
