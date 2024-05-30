@@ -88,4 +88,34 @@ public class TextBlocks {
                 and so on...""";
         System.out.println(multiLine);
     }
+
+    void matchingBlock(){
+        String gqlRequest = "{\"query\":\"query ChargingStationAndConnector{" +
+                "\\n\\tconnector(id: \\\"05f113a5-d662-4f00-bf31-fc18e10a6306\\\"){" +
+                "\\n\\t\\tid\\n\\t\\tevseId\\n\\t\\t" +
+                "connectorType{\\n\\t\\t\\tid\\n\\t\\t\\tchargePointType\\n\\t\\t}\\n\\t}\\n\\t" +
+                "station:cp(id: \\\"33842d46-3b53-4f7f-b2a9-cc062658e8c7\\\"){" +
+                "\\n\\t\\tid\\n\\t\\taddress\\n\\t\\tcity\\n\\t\\tzip\\n\\t\\tcountry\\n\\t}\\n}\"," +
+                "\"operationName\":\"ChargingStationAndConnector\"}";
+
+        String gqlRequestBlock = """
+                {"query":"query ChargingStationAndConnector{
+                	connector(id: "05f113a5-d662-4f00-bf31-fc18e10a6306"){
+                		id
+                		evseId
+                		connectorType{
+                			id
+                			chargePointType
+                		}
+                	}
+                	station:cp(id: "33842d46-3b53-4f7f-b2a9-cc062658e8c7"){
+                		id
+                		address
+                		city
+                		zip
+                		country
+                	}
+                }","operationName":"ChargingStationAndConnector"}
+                """;
+    }
 }
