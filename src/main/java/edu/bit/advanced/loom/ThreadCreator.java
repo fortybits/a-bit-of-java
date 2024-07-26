@@ -1,4 +1,4 @@
-package edu.bit;
+package edu.bit.advanced.loom;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

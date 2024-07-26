@@ -115,12 +115,14 @@ public class Sealed {
     }
 
     sealed interface Expr
-            permits ConstantExpr{
+            permits ConstantExpr {
         public int eval();
     }
 
     record ConstantExpr(int i) implements Expr {
-        public int eval() { return i(); }
+        public int eval() {
+            return i();
+        }
     }
 
     non-sealed class NonSealedClass extends SealedClass {
@@ -135,7 +137,8 @@ public class Sealed {
     non-sealed class SubSubClass extends SubSealedClass {
     }
 
-    class Something extends SubSubClass {}
+    class Something extends SubSubClass {
+    }
 
     final class FinalClass {
     }
