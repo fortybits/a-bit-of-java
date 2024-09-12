@@ -2,11 +2,13 @@ package edu.bit;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -145,5 +147,11 @@ public class OptionalsUtility {
         public String getAsString() {
             return Optional.of(value).orElseThrow(() -> new NoSuchElementException("No value present"));
         }
+    }
+
+    <K, T> Map<K, T> transform(Map<K, Optional<T>> input) {
+        return input.entrySet().stream()
+                .filter(e -> e.getValue().isPresent())
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
     }
 }
