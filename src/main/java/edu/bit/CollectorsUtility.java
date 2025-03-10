@@ -43,8 +43,8 @@ public class CollectorsUtility {
 
     public static Collector<Offer, ?, List<Offer>> minCollector() {
         class Acc {
-            private Offer min = null;
             private final List<Offer> result = new ArrayList<>();
+            private Offer min = null;
 
             private void add(Offer offer) {
                 if (offer.type() == OfferType.STANDARD) {

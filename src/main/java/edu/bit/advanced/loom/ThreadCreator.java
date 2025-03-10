@@ -10,10 +10,10 @@ public class ThreadCreator {
 
     public static void main(String[] args) {
         ExecutorService executor1;
-        try{
+        try {
             Method method = Executors.class.getMethod("newVirtualThreadPerTaskExecutor");
             executor1 = (ExecutorService) method.invoke(null);
-        }catch(NoSuchElementException e) {
+        } catch (NoSuchElementException e) {
             executor1 = Executors.newFixedThreadPool(10);//or similar
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
@@ -22,7 +22,6 @@ public class ThreadCreator {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-
 
 
         ThreadFactory threadFactory = Runtime.version().feature() < 21 ?
@@ -45,6 +44,7 @@ public class ThreadCreator {
 //// java.util.concurrent.ScheduledThreadPoolExecutor@277050dc[Running, pool size = 1, active threads = 0, queued tasks = 2, completed tasks = 2]
         System.out.println("Wait!");
     }
+
     public ExecutorService createExecutor() {
         return Executors.newVirtualThreadPerTaskExecutor();
     }

@@ -17,7 +17,7 @@ class LazyMethodInvocationForStreamTest {
     }
 
     @BeforeEach
-    void clearMocks(){
+    void clearMocks() {
         Mockito.reset(lazyMethodInvocationForStream); // clears any previous invocations
     }
 

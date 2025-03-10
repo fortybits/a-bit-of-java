@@ -16,34 +16,6 @@ class ReflectionTest {
                 .getAnnotation(Reflection.AnnotationParsingUsingReflection.Column.class).name());
     }
 
-    // as part of a compatibility issue after Java-8,
-    // the order of super interfaces matter https://stackoverflow.com/questions/65937177
-    static class Foo extends Bar {
-    }
-
-    abstract static class Bar {
-    }
-
-    interface ServiceA<S> {
-        S getType();
-    }
-
-    interface ServiceB {
-
-        @Deprecated
-        Bar getType();
-    }
-
-    static class ServiceImpl implements ServiceX {
-        @Override
-        public Foo getType() {
-            return null;
-        }
-    }
-
-    interface ServiceX extends ServiceA<Foo>, ServiceB {
-    }
-
     @Test
     void testGettingTheMostSpecificMethod() {
         ServiceImpl service = new ServiceImpl();
@@ -57,6 +29,34 @@ class ReflectionTest {
                 } catch (NoSuchMethodException e) {
                 }
             }
+        }
+    }
+
+    interface ServiceA<S> {
+        S getType();
+    }
+
+    interface ServiceB {
+
+        @Deprecated
+        Bar getType();
+    }
+
+    interface ServiceX extends ServiceA<Foo>, ServiceB {
+    }
+
+    // as part of a compatibility issue after Java-8,
+    // the order of super interfaces matter https://stackoverflow.com/questions/65937177
+    static class Foo extends Bar {
+    }
+
+    abstract static class Bar {
+    }
+
+    static class ServiceImpl implements ServiceX {
+        @Override
+        public Foo getType() {
+            return null;
         }
     }
 }

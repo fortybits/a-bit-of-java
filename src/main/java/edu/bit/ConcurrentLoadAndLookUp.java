@@ -14,11 +14,11 @@ public class ConcurrentLoadAndLookUp {
     private static final ScheduledExecutorService loadFirstDocuments = Executors.newScheduledThreadPool(1);
     private static final ScheduledExecutorService loadSecondDocuments = Executors.newScheduledThreadPool(1);
     private static final ScheduledExecutorService updateDocuments = Executors.newScheduledThreadPool(1);
+    private static final Map<String, Document> secondRegistry = new ConcurrentHashMap<>();
     static long calls;
     static long firstMiss;
     static long secondMiss;
     private static Map<String, Document> firstRegistry = new ConcurrentHashMap<>();
-    private static final Map<String, Document> secondRegistry = new ConcurrentHashMap<>();
     private static List<Document> documents = new ArrayList<>();
 
     public static void main(String[] args) {

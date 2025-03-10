@@ -329,8 +329,10 @@ public class Records {
     record CityRecord(Integer id, String name) {
     }
 
-    record requestBody(innerObject obj){}
-    record innerObject(String a, String b, String c){
+    record requestBody(innerObject obj) {
+    }
+
+    record innerObject(String a, String b, String c) {
         public innerObject(String a) {
             this(a, null, null);
         }

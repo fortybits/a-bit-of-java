@@ -103,6 +103,12 @@ public class OptionalsUtility {
                 .orElseGet(OptionalsUtility::getDefaultNamespace);
     }
 
+    <K, T> Map<K, T> transform(Map<K, Optional<T>> input) {
+        return input.entrySet().stream()
+                .filter(e -> e.getValue().isPresent())
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
+    }
+
     public static final class OptionalString {
 
         private static final OptionalString EMPTY = new OptionalString();
@@ -147,11 +153,5 @@ public class OptionalsUtility {
         public String getAsString() {
             return Optional.of(value).orElseThrow(() -> new NoSuchElementException("No value present"));
         }
-    }
-
-    <K, T> Map<K, T> transform(Map<K, Optional<T>> input) {
-        return input.entrySet().stream()
-                .filter(e -> e.getValue().isPresent())
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
     }
 }

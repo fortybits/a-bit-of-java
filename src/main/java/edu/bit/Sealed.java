@@ -5,15 +5,6 @@ import java.lang.reflect.Modifier;
 
 public class Sealed {
 
-    sealed interface Shape permits Rectangle, Square {
-    }
-
-    record Rectangle() implements Shape {
-    }
-
-    record Square() implements Shape {
-    }
-
     public static void main(Shape shape) {
         switch (shape) {
             case Rectangle r -> System.out.println(r);
@@ -21,69 +12,6 @@ public class Sealed {
             default -> System.out.println("Def");
         }
     }
-
-    public void sealedExperiments() {
-        Integral integral = new Integral();
-        integral.bar();
-        integral.foo();
-
-    }
-
-    public sealed interface Int permits Some {
-        void foo();
-
-        void bar();
-    }
-
-
-    sealed interface Node {
-        record ConstNode(int i) implements Node {
-        }
-
-        record NegNode(Node n) implements Node {
-        }
-
-        record AddNode(Node left, Node right) implements Node {
-        }
-
-        record MultiNode(Node left, Node right) implements Node {
-        }
-    }
-
-    static abstract sealed class Some implements Int permits Integral {
-        public void foo() {
-            System.out.println("sealed some");
-        }
-    }
-
-    static non-sealed class Integral extends Some {
-
-        @Override
-        public void bar() {
-            System.out.println("bar from non-sealed class");
-        }
-
-        @Override
-        public void foo() {
-            System.out.println("foo from non-sealed class");
-        }
-
-    }
-
-    public sealed class A permits B {
-    }
-
-    public final class B extends A implements Serializable {
-    }
-//    int eval(Node n) {
-//        return switch (n) {
-//            case ConstNode( int i) -> i;
-//            case NegNode(var node) -> -eval(node);
-//            case AddNode(var left, var right) -> eval(left) + eval(right);
-//            case MultiNode(var left, var right) -> eval(left) * eval(right);
-//                // no default needed, Node is sealed and we covered all the cases
-//        };
-//    }
 
     public static boolean isExplicitlyNonSealed(Class<?> clazz) {
         boolean isClassSealed = clazz.isSealed();
@@ -111,18 +39,93 @@ public class Sealed {
         System.out.println("isExplicitlyNonSealed(ConstantExpr.class) = " + isExplicitlyNonSealed(ConstantExpr.class));
     }
 
-    sealed class SealedClass permits NonSealedClass, FinalSealedClass, SubSealedClass {
+    public void sealedExperiments() {
+        Integral integral = new Integral();
+        integral.bar();
+        integral.foo();
+
+    }
+
+    sealed interface Shape permits Rectangle, Square {
+    }
+
+    public sealed interface Int permits Some {
+        void foo();
+
+        void bar();
+    }
+
+
+    sealed interface Node {
+        record ConstNode(int i) implements Node {
+        }
+
+        record NegNode(Node n) implements Node {
+        }
+
+        record AddNode(Node left, Node right) implements Node {
+        }
+
+        record MultiNode(Node left, Node right) implements Node {
+        }
     }
 
     sealed interface Expr
             permits ConstantExpr {
-        public int eval();
+        int eval();
+    }
+
+    sealed interface SealedInterface permits ImplementingClass {
+    }
+
+    record Rectangle() implements Shape {
+    }
+
+    record Square() implements Shape {
+    }
+//    int eval(Node n) {
+//        return switch (n) {
+//            case ConstNode( int i) -> i;
+//            case NegNode(var node) -> -eval(node);
+//            case AddNode(var left, var right) -> eval(left) + eval(right);
+//            case MultiNode(var left, var right) -> eval(left) * eval(right);
+//                // no default needed, Node is sealed and we covered all the cases
+//        };
+//    }
+
+    static abstract sealed class Some implements Int permits Integral {
+        public void foo() {
+            System.out.println("sealed some");
+        }
+    }
+
+    static non-sealed class Integral extends Some {
+
+        @Override
+        public void bar() {
+            System.out.println("bar from non-sealed class");
+        }
+
+        @Override
+        public void foo() {
+            System.out.println("foo from non-sealed class");
+        }
+
     }
 
     record ConstantExpr(int i) implements Expr {
         public int eval() {
             return i();
         }
+    }
+
+    public sealed class A permits B {
+    }
+
+    public final class B extends A implements Serializable {
+    }
+
+    sealed class SealedClass permits NonSealedClass, FinalSealedClass, SubSealedClass {
     }
 
     non-sealed class NonSealedClass extends SealedClass {
@@ -144,9 +147,6 @@ public class Sealed {
     }
 
     class OrdinaryClass {
-    }
-
-    sealed interface SealedInterface permits ImplementingClass {
     }
 
     non-sealed class ImplementingClass implements SealedInterface {

@@ -2,10 +2,26 @@ package edu.bit;
 
 public class SynchronisedThread {
 
+    public static void main(String[] args) {
+        Callme target = new Callme();
+        Thread commonThread = new Thread();
+        Caller ob1 = new Caller(commonThread, target, "Hello");
+        Caller ob2 = new Caller(commonThread, target, "Synchronized");
+        Caller ob3 = new Caller(commonThread, target, "World");
+        // wait for threads to end
+        try {
+            ob1.t.join();
+            ob2.t.join();
+            ob3.t.join();
+        } catch (InterruptedException e) {
+            System.out.println("Interrupted");
+        }
+    }
+
     static class Callme {
         void call(String msg) {
             System.out.print("[" + msg);
-            System.out.print( " inside " + Thread.currentThread().getName() + ":"+ Thread.currentThread().threadId());
+            System.out.print(" inside " + Thread.currentThread().getName() + ":" + Thread.currentThread().threadId());
 
             try {
                 Thread.sleep(1000);
@@ -33,22 +49,6 @@ public class SynchronisedThread {
             synchronized (target) { // synchronized block
                 target.call(msg);
             }
-        }
-    }
-
-    public static void main(String args[]) {
-        Callme target = new Callme();
-        Thread commonThread = new Thread();
-        Caller ob1 = new Caller(commonThread, target, "Hello");
-        Caller ob2 = new Caller(commonThread, target, "Synchronized");
-        Caller ob3 = new Caller(commonThread, target, "World");
-        // wait for threads to end
-        try {
-            ob1.t.join();
-            ob2.t.join();
-            ob3.t.join();
-        } catch (InterruptedException e) {
-            System.out.println("Interrupted");
         }
     }
 }

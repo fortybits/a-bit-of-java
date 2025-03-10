@@ -9,36 +9,6 @@ import java.util.stream.Stream;
 
 public class ConceptualThreads {
 
-    class RequestScope<T> extends StructuredTaskScope<T> implements SomeFrameworkCallbackApi {
-        private final Queue<T> subtasks = new LinkedTransferQueue<>();
-
-        @Override
-        protected void handleComplete(Subtask<? extends T> subtask) {
-
-        }
-
-        @Override
-        public RequestScope<T> join() throws InterruptedException {
-            super.join();
-            return this;
-        }
-
-        public Stream<T> completedSuccessfully() {
-            super.ensureOwnerAndJoined();
-            return subtasks.stream();
-        }
-
-        @Override
-        public void beforeRequest(RequestHeaders req, ConfigInfo info) {
-
-        }
-
-        @Override
-        public void afterRequest() {
-
-        }
-    }
-
     public static void main(String[] args) {
         ElePosRepo elePosRepo = null;
         FaultRepo faultRepo = null;
@@ -76,7 +46,6 @@ public class ConceptualThreads {
         Optional<Boolean> findEventOfFireByUnitId(Integer unitId);
     }
 
-
     static class CustomTaskScope extends StructuredTaskScope<Optional<Boolean>> {
         @Override
         protected void handleComplete(Subtask<? extends Optional<Boolean>> subtask) {
@@ -103,6 +72,36 @@ public class ConceptualThreads {
                 throws InterruptedException, TimeoutException {
             super.joinUntil(deadline);
             return this;
+        }
+    }
+
+    class RequestScope<T> extends StructuredTaskScope<T> implements SomeFrameworkCallbackApi {
+        private final Queue<T> subtasks = new LinkedTransferQueue<>();
+
+        @Override
+        protected void handleComplete(Subtask<? extends T> subtask) {
+
+        }
+
+        @Override
+        public RequestScope<T> join() throws InterruptedException {
+            super.join();
+            return this;
+        }
+
+        public Stream<T> completedSuccessfully() {
+            super.ensureOwnerAndJoined();
+            return subtasks.stream();
+        }
+
+        @Override
+        public void beforeRequest(RequestHeaders req, ConfigInfo info) {
+
+        }
+
+        @Override
+        public void afterRequest() {
+
         }
     }
 

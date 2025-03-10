@@ -30,7 +30,7 @@ public class TextBlocks {
                 function hello() {
                     print('"Hello, world"');
                 }
-                                         
+                
                 hello();
                 """;
         Object obj = engine.eval(script);
@@ -89,7 +89,7 @@ public class TextBlocks {
         System.out.println(multiLine);
     }
 
-    void matchingBlock(){
+    void matchingBlock() {
         String gqlRequest = "{\"query\":\"query ChargingStationAndConnector{" +
                 "\\n\\tconnector(id: \\\"05f113a5-d662-4f00-bf31-fc18e10a6306\\\"){" +
                 "\\n\\t\\tid\\n\\t\\tevseId\\n\\t\\t" +
